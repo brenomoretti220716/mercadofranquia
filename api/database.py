@@ -129,6 +129,16 @@ def init_db():
         UNIQUE(data, codigo_segmento)
     );
 
+    CREATE TABLE IF NOT EXISTS audit_log (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        acao        TEXT NOT NULL,           -- INSERT | UPDATE | DELETE
+        usuario     TEXT DEFAULT 'admin',
+        tabela      TEXT NOT NULL,
+        registro_id INTEGER,
+        dados_json  TEXT,
+        created_at  TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS caged_bcb (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
         data        TEXT NOT NULL,

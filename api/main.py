@@ -224,9 +224,67 @@ async def salvar_relatorio(payload: dict):
     """, (rel_id, periodo, d.get("empregos_diretos"), d.get("var_empregos_pct"),
           d.get("num_redes"), d.get("num_unidades"), d.get("ticket_medio")))
 
+    # Registrar auditoria
+    c.execute("""INSERT INTO audit_log(acao,usuario,tabela,registro_id,dados_json)
+        VALUES(?,?,?,?,?)""",
+        ("UPDATE" if rel_id else "INSERT", "admin", "relatorios", rel_id, json.dumps({"periodo": periodo})))
+
     conn.commit()
     conn.close()
     return {"status": "ok", "periodo": periodo, "relatorio_id": rel_id}
+
+
+@app.delete("/api/backoffice/excluir/{periodo}")
+def excluir_relatorio(periodo: str):
+    """Exclui um relatório e seus dados vinculados."""
+    conn = get_conn()
+    c = conn.cursor()
+    row = c.execute("SELECT id FROM relatorios WHERE periodo=?", (periodo,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, f"Relatório '{periodo}' não encontrado.")
+    rel_id = row[0]
+    c.execute("DELETE FROM faturamento WHERE relatorio_id=?", (rel_id,))
+    c.execute("DELETE FROM indicadores WHERE relatorio_id=?", (rel_id,))
+    c.execute("DELETE FROM relatorios WHERE id=?", (rel_id,))
+    c.execute("""INSERT INTO audit_log(acao,usuario,tabela,registro_id,dados_json)
+        VALUES(?,?,?,?,?)""",
+        ("DELETE", "admin", "relatorios", rel_id, json.dumps({"periodo": periodo})))
+    conn.commit()
+    conn.close()
+    return {"status": "ok", "periodo": periodo}
+
+
+# ── AUDITORIA ────────────────────────────────────────────────────────────
+
+@app.get("/api/audit")
+def get_audit_logs(acao: str = None, limite: int = 100):
+    """Lista logs de auditoria com filtros opcionais."""
+    conn = get_conn()
+    q = "SELECT * FROM audit_log"
+    params = []
+    if acao:
+        q += " WHERE acao = ?"
+        params.append(acao.upper())
+    q += " ORDER BY created_at DESC LIMIT ?"
+    params.append(limite)
+    rows = conn.execute(q, params).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+@app.post("/api/audit")
+def registrar_audit(payload: dict):
+    """Registra uma ação na auditoria."""
+    conn = get_conn()
+    conn.execute("""INSERT INTO audit_log(acao,usuario,tabela,registro_id,dados_json)
+        VALUES(?,?,?,?,?)""",
+        (payload.get("acao", "INSERT"), payload.get("usuario", "admin"),
+         payload.get("tabela", ""), payload.get("registro_id"),
+         json.dumps(payload.get("dados")) if payload.get("dados") else None))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
 
 
 # ── MACRO: BCB E IBGE ─────────────────────────────────────────────────────

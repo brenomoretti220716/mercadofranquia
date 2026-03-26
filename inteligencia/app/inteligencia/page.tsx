@@ -1,6 +1,7 @@
-import { getFaturamentoAnual, getSegmentos, getIndicadores, getProjecoes, getRanking, getMacroBCB, getMacroIBGE } from "@/lib/api"
+import { getFaturamentoAnual, getSegmentos, getIndicadores, getProjecoes, getRanking, getMacroBCB, getMacroIBGE, getVarejoPMC, getEmpregoCaged } from "@/lib/api"
 import Dashboard from "./dashboard"
 import { CenarioMacro, FranchisingVsEconomia, PibPorEstado } from "@/components/macro-charts"
+import { FranchisingVsVarejo, EmpregoFormal } from "@/components/comparativo-charts"
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -14,7 +15,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default async function InteligenciaPage() {
-  const [anual, segmentos, indicadores, projecoes, ranking, selic, ipca, dolar, desemprego, pibTrimestral, pibEstado] = await Promise.all([
+  const [anual, segmentos, indicadores, projecoes, ranking, selic, ipca, dolar, desemprego, pibTrimestral, pibEstado, pmcData, cagedComercio, cagedServicos] = await Promise.all([
     getFaturamentoAnual(),
     getSegmentos("anual"),
     getIndicadores(),
@@ -26,6 +27,9 @@ export default async function InteligenciaPage() {
     getMacroBCB("desemprego", 3),
     getMacroBCB("pib", 10),
     getMacroIBGE("pib_estado"),
+    getVarejoPMC(36),
+    getEmpregoCaged("comercio", 36),
+    getEmpregoCaged("servicos", 36),
   ])
 
   const totais = anual
@@ -141,8 +145,20 @@ export default async function InteligenciaPage() {
         <SectionTitle>PIB por Estado</SectionTitle>
         <PibPorEstado dados={pibEstado.dados} />
 
+        {/* SEÇÃO: Franchising vs Varejo Geral */}
+        <SectionTitle>Franchising vs Varejo Geral</SectionTitle>
+        <FranchisingVsVarejo pmcDados={pmcData.dados} segmentosABF={segmentos} />
+
+        {/* SEÇÃO: Emprego Formal — Franchising vs Economia */}
+        <SectionTitle>Emprego Formal — Franchising vs Economia</SectionTitle>
+        <EmpregoFormal
+          cagedComercio={cagedComercio.dados}
+          cagedServicos={cagedServicos.dados}
+          empregosAbf={emprego?.empregos_diretos ?? null}
+        />
+
         <p className="text-center mt-8" style={{ fontSize: 11, color: "#ccc" }}>
-          Fonte: ABF · BCB · IBGE · mercadofranquia.com.br/inteligencia
+          Fonte: ABF · BCB · IBGE/PMC · CAGED · mercadofranquia.com.br/inteligencia
         </p>
       </div>
     </main>

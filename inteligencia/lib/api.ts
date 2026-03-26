@@ -42,3 +42,17 @@ export async function getMacroIBGE(indicador: string) {
   if (!res.ok) throw new Error(`Erro ao buscar indicador IBGE: ${indicador}`)
   return res.json()
 }
+
+export async function getVarejoPMC(meses = 36) {
+  const res = await fetch(`${API_URL}/api/varejo/pmc?meses=${meses}`)
+  if (!res.ok) throw new Error('Erro ao buscar PMC')
+  return res.json()
+}
+
+export async function getEmpregoCaged(setor?: string, meses = 36) {
+  const params = new URLSearchParams({ meses: String(meses) })
+  if (setor) params.set('setor', setor)
+  const res = await fetch(`${API_URL}/api/emprego/caged?${params}`)
+  if (!res.ok) throw new Error(`Erro ao buscar CAGED: ${setor}`)
+  return res.json()
+}

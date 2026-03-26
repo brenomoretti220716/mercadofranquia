@@ -263,7 +263,6 @@ SQLite (`abf.db`) com as tabelas:
 - `relatorios` — metadata dos relatórios importados
 - `faturamento` — valores de faturamento por período/segmento
 - `indicadores` — empregos, redes, unidades
-- `macro` — dados macroeconômicos (PIB, IPCA, Selic) dos relatórios ABF
 - `macro_bcb` — séries históricas do Banco Central (Selic, IPCA, câmbio, PIB, desemprego)
 - `macro_ibge` — dados agregados do IBGE (PIB por estado, varejo)
 - `ranking` — ranking das maiores franquias

@@ -54,20 +54,6 @@ def init_db():
         created_at      TEXT DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS macro (
-        id              INTEGER PRIMARY KEY AUTOINCREMENT,
-        relatorio_id    INTEGER REFERENCES relatorios(id),
-        periodo         TEXT NOT NULL UNIQUE,
-        pib_realizado   REAL,
-        pib_expectativa REAL,
-        ipca_realizado  REAL,
-        ipca_expectativa REAL,
-        selic           REAL,
-        confianca_empresarial REAL,
-        confianca_consumidor  REAL,
-        created_at      TEXT DEFAULT (datetime('now'))
-    );
-
     CREATE TABLE IF NOT EXISTS ranking (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
         relatorio_id INTEGER REFERENCES relatorios(id),

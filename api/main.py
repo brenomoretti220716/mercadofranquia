@@ -224,19 +224,6 @@ async def salvar_relatorio(payload: dict):
     """, (rel_id, periodo, d.get("empregos_diretos"), d.get("var_empregos_pct"),
           d.get("num_redes"), d.get("num_unidades"), d.get("ticket_medio")))
 
-    # Macro
-    c.execute("""
-        INSERT INTO macro(relatorio_id,periodo,pib_realizado,pib_expectativa,
-            ipca_realizado,ipca_expectativa,selic)
-        VALUES(?,?,?,?,?,?,?)
-        ON CONFLICT(periodo) DO UPDATE SET
-            pib_realizado=COALESCE(excluded.pib_realizado,pib_realizado),
-            pib_expectativa=COALESCE(excluded.pib_expectativa,pib_expectativa),
-            ipca_realizado=COALESCE(excluded.ipca_realizado,ipca_realizado),
-            selic=COALESCE(excluded.selic,selic)
-    """, (rel_id, periodo, d.get("pib_realizado"), d.get("pib_expectativa"),
-          d.get("ipca_realizado"), d.get("ipca_expectativa"), d.get("selic")))
-
     conn.commit()
     conn.close()
     return {"status": "ok", "periodo": periodo, "relatorio_id": rel_id}

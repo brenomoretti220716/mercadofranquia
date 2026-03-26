@@ -97,19 +97,59 @@ Será lançado apenas após a plataforma atingir escala. Valida franquias com da
 
 ---
 
+## 🏗️ Arquitetura atual
+
+```
+mercadofranquia/
+├── api/                      # Backend Python
+│   ├── main.py               # FastAPI — endpoints REST
+│   ├── database.py           # Schema SQLite + seed de dados históricos ABF
+│   ├── abf.db                # Banco (não versionado)
+│   ├── requirements.txt      # Dependências com versões fixas
+│   ├── .env / .env.example   # Variáveis de ambiente
+│   └── README.md             # Documentação dos endpoints
+├── inteligencia/             # Frontend Next.js
+│   ├── app/                  # Pages (App Router)
+│   │   ├── page.tsx          # Home
+│   │   └── inteligencia/     # Dashboard de inteligência
+│   ├── components/ui/        # shadcn/ui (badge, button, card, table)
+│   ├── lib/                  # Utilitários
+│   ├── .env.local            # NEXT_PUBLIC_API_URL
+│   └── package.json
+├── docs/                     # Documentação
+├── Makefile                  # make dev, make api, make frontend, make install, make db, make clean
+├── CLAUDE.md                 # Este arquivo
+└── README.md                 # Visão geral do projeto
+```
+
+### Fluxo de dados
+1. `database.py` cria o schema SQLite e popula com dados históricos da ABF (2014–2025)
+2. `main.py` expõe os dados via REST (FastAPI) na porta 8000
+3. O frontend Next.js consome a API e renderiza dashboards com Recharts
+
+### Tecnologias
+- **Backend:** Python 3, FastAPI, SQLite, pdfplumber, Claude API (extração de PDFs)
+- **Frontend:** Next.js 16, React 19, Tailwind CSS 4, Recharts, TanStack Table, shadcn/ui
+
+---
+
 ## ⚙️ Como rodar localmente
 
 ```bash
-# 1. Instale dependências
-npm install
+# Instala tudo (Python + Node)
+make install
 
-# 2. Configure o ambiente
-cp .env.example .env
-# Preencha os valores no .env
+# Configura ambiente
+cp api/.env.example api/.env
 
-# 3. Rode o projeto
-npm run dev
+# Popula o banco (se necessário)
+make db
+
+# Roda API + Frontend
+make dev
 ```
+
+Ou separadamente: `make api` (porta 8000) e `make frontend` (porta 3000).
 
 ---
 
@@ -117,10 +157,14 @@ npm run dev
 
 | Decisão | Motivo | Data |
 |---|---|---|
-| _(a preencher conforme o projeto avança)_ | — | — |
+| SQLite como banco | Simplicidade para MVP, dados read-heavy, zero infra | 2026-03-25 |
+| Monorepo com api/ + inteligencia/ | Frontend e backend no mesmo repo facilita desenvolvimento | 2026-03-25 |
+| Claude API para extração de PDFs | PDFs da ABF têm layout variável, IA generaliza melhor que parsing manual | 2026-03-25 |
 
 ---
 
 ## 🚧 O que NÃO fazer neste projeto
 
-- _(a preencher conforme armadilhas forem descobertas)_
+- Não commitar `abf.db`, `.env` ou `.env.local` — estão no `.gitignore`
+- Não usar `../../../` em imports — sempre absolutos
+- Não hardcodar cores, textos ou URLs no código

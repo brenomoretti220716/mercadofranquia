@@ -49,6 +49,12 @@ export async function getVarejoPMC(meses = 36) {
   return res.json()
 }
 
+export async function getConsumidorPainel(anos = 3) {
+  const res = await fetch(`${API_URL}/api/consumidor/painel?anos=${anos}`)
+  if (!res.ok) throw new Error('Erro ao buscar painel do consumidor')
+  return res.json()
+}
+
 export async function getEmpregoCaged(setor?: string, meses = 36) {
   const params = new URLSearchParams({ meses: String(meses) })
   if (setor) params.set('setor', setor)

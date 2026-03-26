@@ -1,7 +1,8 @@
-import { getFaturamentoAnual, getSegmentos, getIndicadores, getProjecoes, getRanking, getMacroBCB, getMacroIBGE, getVarejoPMC, getEmpregoCaged } from "@/lib/api"
+import { getFaturamentoAnual, getSegmentos, getIndicadores, getProjecoes, getRanking, getMacroBCB, getMacroIBGE, getVarejoPMC, getEmpregoCaged, getConsumidorPainel } from "@/lib/api"
 import Dashboard from "./dashboard"
 import { CenarioMacro, FranchisingVsEconomia, PibPorEstado } from "@/components/macro-charts"
 import { FranchisingVsVarejo, EmpregoFormal } from "@/components/comparativo-charts"
+import { PainelConsumidor } from "@/components/consumidor-charts"
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -15,7 +16,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default async function InteligenciaPage() {
-  const [anual, segmentos, indicadores, projecoes, ranking, selic, ipca, dolar, desemprego, pibTrimestral, pibEstado, pmcData, cagedComercio, cagedServicos] = await Promise.all([
+  const [anual, segmentos, indicadores, projecoes, ranking, selic, ipca, dolar, desemprego, pibTrimestral, pibEstado, pmcData, cagedComercio, cagedServicos, consumidorPainel] = await Promise.all([
     getFaturamentoAnual(),
     getSegmentos("anual"),
     getIndicadores(),
@@ -30,6 +31,7 @@ export default async function InteligenciaPage() {
     getVarejoPMC(36),
     getEmpregoCaged("comercio", 36),
     getEmpregoCaged("servicos", 36),
+    getConsumidorPainel(3),
   ])
 
   const totais = anual
@@ -144,6 +146,10 @@ export default async function InteligenciaPage() {
         {/* SEÇÃO: PIB por Estado */}
         <SectionTitle>PIB por Estado</SectionTitle>
         <PibPorEstado dados={pibEstado.dados} />
+
+        {/* SEÇÃO: Painel do Consumidor */}
+        <SectionTitle>Painel do Consumidor</SectionTitle>
+        <PainelConsumidor painel={consumidorPainel} />
 
         {/* SEÇÃO: Franchising vs Varejo Geral */}
         <SectionTitle>Franchising vs Varejo Geral</SectionTitle>

@@ -294,6 +294,85 @@ def get_macro_ibge(indicador: str = "pib_estado"):
     return {"indicador": indicador, "codigo": codigo, "registros": len(rows), "dados": [dict(r) for r in rows]}
 
 
+# ── VAREJO: PMC ──────────────────────────────────────────────────────────
+
+@app.get("/api/varejo/pmc")
+def get_varejo_pmc(segmento: str = None, meses: int = 24):
+    """Dados da PMC/IBGE por segmento de varejo."""
+    from datetime import datetime, timedelta
+    data_limite = (datetime.now() - timedelta(days=meses * 30)).strftime("%Y-%m")
+
+    conn = get_conn()
+
+    # Segmentos disponíveis
+    segs = conn.execute(
+        "SELECT DISTINCT codigo_segmento, nome_segmento FROM pmc_ibge ORDER BY nome_segmento"
+    ).fetchall()
+
+    q = "SELECT * FROM pmc_ibge WHERE data >= ?"
+    params = [data_limite]
+    if segmento:
+        q += " AND codigo_segmento = ?"
+        params.append(segmento)
+    q += " ORDER BY data, nome_segmento"
+
+    rows = conn.execute(q, params).fetchall()
+    conn.close()
+
+    return {
+        "fonte": "IBGE/PMC",
+        "tabela": 8882,
+        "registros": len(rows),
+        "segmentos_disponiveis": [{"codigo": s["codigo_segmento"], "nome": s["nome_segmento"]} for s in segs],
+        "dados": [dict(r) for r in rows],
+    }
+
+
+# ── EMPREGO: CAGED ──────────────────────────────────────────────────────
+
+SETORES_CAGED_MAP = {
+    "total": "Total",
+    "comercio": "Comércio",
+    "servicos": "Serviços",
+    "alojamento": "Alojamento e alimentação",
+    "construcao": "Construção",
+    "industria": "Indústria de transformação",
+}
+
+@app.get("/api/emprego/caged")
+def get_emprego_caged(setor: str = None, meses: int = 24):
+    """Dados de emprego formal (CAGED) por setor via BCB."""
+    from datetime import datetime, timedelta
+    data_limite = (datetime.now() - timedelta(days=meses * 30)).strftime("%Y-%m-%d")
+
+    conn = get_conn()
+
+    q = "SELECT * FROM caged_bcb WHERE data >= ?"
+    params = [data_limite]
+
+    if setor:
+        nome_setor = SETORES_CAGED_MAP.get(setor.lower())
+        if not nome_setor:
+            conn.close()
+            raise HTTPException(
+                400,
+                f"Setor '{setor}' não encontrado. Opções: {', '.join(SETORES_CAGED_MAP.keys())}",
+            )
+        q += " AND setor = ?"
+        params.append(nome_setor)
+
+    q += " ORDER BY data, setor"
+    rows = conn.execute(q, params).fetchall()
+    conn.close()
+
+    return {
+        "fonte": "MTE/CAGED via BCB",
+        "registros": len(rows),
+        "setores_disponiveis": list(SETORES_CAGED_MAP.keys()),
+        "dados": [dict(r) for r in rows],
+    }
+
+
 @app.get("/api/sync/status")
 def get_sync_status():
     """Retorna o último sync de cada fonte."""

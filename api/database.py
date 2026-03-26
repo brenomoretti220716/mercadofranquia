@@ -127,6 +127,35 @@ def init_db():
         erro                TEXT,
         created_at          TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS pmc_ibge (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        data             TEXT NOT NULL,
+        codigo_segmento  TEXT NOT NULL,
+        nome_segmento    TEXT NOT NULL,
+        variacao_mensal  REAL,
+        variacao_anual   REAL,
+        indice           REAL,
+        fonte            TEXT DEFAULT 'IBGE/PMC',
+        url_fonte        TEXT DEFAULT 'https://servicodados.ibge.gov.br/api/v3/agregados/8882',
+        data_coleta      TEXT,
+        created_at       TEXT DEFAULT (datetime('now')),
+        UNIQUE(data, codigo_segmento)
+    );
+
+    CREATE TABLE IF NOT EXISTS caged_bcb (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        data        TEXT NOT NULL,
+        estoque     REAL,
+        saldo       REAL,
+        setor       TEXT NOT NULL,
+        codigo_bcb  INTEGER NOT NULL,
+        fonte       TEXT DEFAULT 'MTE/CAGED via BCB',
+        url_fonte   TEXT,
+        data_coleta TEXT,
+        created_at  TEXT DEFAULT (datetime('now')),
+        UNIQUE(data, codigo_bcb)
+    );
     """)
     conn.commit()
     conn.close()

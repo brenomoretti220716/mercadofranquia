@@ -169,6 +169,73 @@ Endpoint: `GET /api/macro/ibge?indicador=pib_estado`
 }
 ```
 
+### PMC — Varejo por Segmento (IBGE tabela 8882)
+
+Endpoint: `GET /api/varejo/pmc?segmento=90672&meses=24`
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `segmento` | str | todos | Código IBGE do segmento (opcional) |
+| `meses` | int | 24 | Quantidade de meses para trás |
+
+**Segmentos disponíveis:**
+
+| Código | Segmento |
+|---|---|
+| 90671 | Combustíveis e lubrificantes |
+| 90672 | Hiper/supermercados, alimentos, bebidas, fumo |
+| 90673 | Tecidos, vestuário e calçados |
+| 2759 | Móveis e eletrodomésticos |
+| 103155 | Artigos farmacêuticos, perfumaria, cosméticos |
+| 103156 | Livros, jornais, revistas e papelaria |
+| 103157 | Equipamentos escritório, informática, comunicação |
+| 103158 | Outros artigos de uso pessoal e doméstico |
+
+**Resposta:**
+```json
+{
+  "fonte": "IBGE/PMC",
+  "tabela": 8882,
+  "registros": 132,
+  "segmentos_disponiveis": [{"codigo": "90672", "nome": "..."}],
+  "dados": [{"data": "2025-12", "codigo_segmento": "90672", "nome_segmento": "...", "variacao_mensal": 3.2, "variacao_anual": 5.1}]
+}
+```
+
+---
+
+### CAGED — Emprego Formal por Setor (BCB SGS)
+
+Endpoint: `GET /api/emprego/caged?setor=comercio&meses=24`
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `setor` | str | todos | Slug do setor (opcional) |
+| `meses` | int | 24 | Quantidade de meses para trás |
+
+**Setores disponíveis:**
+
+| Slug | Setor | Código BCB |
+|---|---|---|
+| `total` | Total | 28763 |
+| `comercio` | Comércio | 28771 |
+| `servicos` | Serviços | 28772 |
+| `alojamento` | Alojamento e alimentação | 28774 |
+| `construcao` | Construção | 28770 |
+| `industria` | Indústria de transformação | 28766 |
+
+**Resposta:**
+```json
+{
+  "fonte": "MTE/CAGED via BCB",
+  "registros": 96,
+  "setores_disponiveis": ["total", "comercio", "servicos", "alojamento", "construcao", "industria"],
+  "dados": [{"data": "2025-12-01", "setor": "Comércio", "estoque": 12345678, "saldo": 15000, "codigo_bcb": 28771}]
+}
+```
+
+---
+
 ### Status do sync
 
 Endpoint: `GET /api/sync/status`
@@ -201,4 +268,6 @@ SQLite (`abf.db`) com as tabelas:
 - `macro_ibge` — dados agregados do IBGE (PIB por estado, varejo)
 - `ranking` — ranking das maiores franquias
 - `projecoes` — projeções de crescimento vs. realizado
+- `pmc_ibge` — PMC/IBGE: varejo por segmento (variação mensal/anual, índice)
+- `caged_bcb` — CAGED via BCB: estoque e saldo de emprego formal por setor
 - `sync_log` — log de cada execução de sync (fonte, status, quantidade, erro)

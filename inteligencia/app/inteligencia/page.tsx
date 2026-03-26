@@ -1,13 +1,31 @@
-import { getFaturamentoAnual, getSegmentos, getIndicadores, getProjecoes, getRanking } from "@/lib/api"
+import { getFaturamentoAnual, getSegmentos, getIndicadores, getProjecoes, getRanking, getMacroBCB, getMacroIBGE } from "@/lib/api"
 import Dashboard from "./dashboard"
+import { CenarioMacro, FranchisingVsEconomia, PibPorEstado } from "@/components/macro-charts"
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 mt-10 mb-5">
+      <h2 className="text-sm font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "#1a1a18" }}>
+        {children}
+      </h2>
+      <div className="flex-1 h-px" style={{ background: "#e0dfda" }} />
+    </div>
+  )
+}
 
 export default async function InteligenciaPage() {
-  const [anual, segmentos, indicadores, projecoes, ranking] = await Promise.all([
+  const [anual, segmentos, indicadores, projecoes, ranking, selic, ipca, dolar, desemprego, pibTrimestral, pibEstado] = await Promise.all([
     getFaturamentoAnual(),
     getSegmentos("anual"),
     getIndicadores(),
     getProjecoes(),
     getRanking(),
+    getMacroBCB("selic", 3),
+    getMacroBCB("ipca", 3),
+    getMacroBCB("dolar", 3),
+    getMacroBCB("desemprego", 3),
+    getMacroBCB("pib", 10),
+    getMacroIBGE("pib_estado"),
   ])
 
   const totais = anual
@@ -111,8 +129,20 @@ export default async function InteligenciaPage() {
           indicadores={indicadores}
         />
 
-        <p className="text-center mt-4" style={{ fontSize: 11, color: "#ccc" }}>
-          Fonte: ABF · mercadofranquia.com.br/inteligencia
+        {/* SEÇÃO: Cenário Macroeconômico */}
+        <SectionTitle>Cenário Macroeconômico</SectionTitle>
+        <CenarioMacro selic={selic} ipca={ipca} dolar={dolar} desemprego={desemprego} />
+
+        {/* SEÇÃO: Franchising vs Economia */}
+        <SectionTitle>Franchising vs Economia</SectionTitle>
+        <FranchisingVsEconomia fatAnual={anual} pibTrimestral={pibTrimestral} />
+
+        {/* SEÇÃO: PIB por Estado */}
+        <SectionTitle>PIB por Estado</SectionTitle>
+        <PibPorEstado dados={pibEstado.dados} />
+
+        <p className="text-center mt-8" style={{ fontSize: 11, color: "#ccc" }}>
+          Fonte: ABF · BCB · IBGE · mercadofranquia.com.br/inteligencia
         </p>
       </div>
     </main>

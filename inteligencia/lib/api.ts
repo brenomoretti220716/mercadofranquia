@@ -30,3 +30,15 @@ export async function getRanking(ano?: number) {
   if (!res.ok) throw new Error('Erro ao buscar ranking')
   return res.json()
 }
+
+export async function getMacroBCB(serie: string, anos = 5) {
+  const res = await fetch(`${API_URL}/api/macro/bcb?serie=${serie}&anos=${anos}`)
+  if (!res.ok) throw new Error(`Erro ao buscar série BCB: ${serie}`)
+  return res.json()
+}
+
+export async function getMacroIBGE(indicador: string) {
+  const res = await fetch(`${API_URL}/api/macro/ibge?indicador=${indicador}`)
+  if (!res.ok) throw new Error(`Erro ao buscar indicador IBGE: ${indicador}`)
+  return res.json()
+}

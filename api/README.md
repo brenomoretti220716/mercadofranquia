@@ -139,6 +139,10 @@ Endpoint: `GET /api/macro/bcb?serie=selic&anos=5`
 | `dolar` / `usd` | 1 | Câmbio USD/BRL |
 | `pib` | 4380 | PIB trimestral |
 | `desemprego` | 24369 | Taxa de desemprego |
+| `icc` | 4393 | Índice de Confiança do Consumidor (FGV) |
+| `ice` | 4395 | Índice de Confiança Empresarial (FGV) |
+| `endividamento` | 29039 | Endividamento das famílias (% renda) |
+| `massa_salarial` | 17633 | Massa salarial real (R$ bilhões) |
 
 **Resposta:**
 ```json
@@ -147,6 +151,25 @@ Endpoint: `GET /api/macro/bcb?serie=selic&anos=5`
   "codigo": 11,
   "registros": 120,
   "dados": [{"data": "2021-01-01", "nome_serie": "Selic", "valor": 2.0}]
+}
+```
+
+### Consumidor (endpoints agrupados)
+
+| Endpoint | Descrição |
+|---|---|
+| `GET /api/consumidor/confianca?anos=5` | ICC e ICE lado a lado |
+| `GET /api/consumidor/endividamento?anos=5` | Endividamento famílias (% renda) |
+| `GET /api/consumidor/massa-salarial?anos=5` | Massa salarial real (R$ bi) |
+| `GET /api/consumidor/painel?anos=5` | Todos os 4 indicadores juntos |
+
+**Resposta do painel:**
+```json
+{
+  "icc": {"codigo": 4393, "nome": "...", "dados": [{"data": "2024-01-01", "valor": 91.2}]},
+  "ice": {"codigo": 4395, "nome": "...", "dados": [...]},
+  "endividamento": {"codigo": 29039, "nome": "...", "dados": [...]},
+  "massa_salarial": {"codigo": 17633, "nome": "...", "dados": [...]}
 }
 ```
 

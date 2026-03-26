@@ -238,6 +238,10 @@ SERIES_BCB_MAP = {
     "usd": 1,
     "pib": 4380,
     "desemprego": 24369,
+    "icc": 4393,
+    "ice": 4395,
+    "endividamento": 29039,
+    "massa_salarial": 17633,
 }
 
 @app.get("/api/macro/bcb")
@@ -357,6 +361,53 @@ def get_emprego_caged(setor: str = None, meses: int = 24):
         "registros": len(rows),
         "setores_disponiveis": list(SETORES_CAGED_MAP.keys()),
         "dados": [dict(r) for r in rows],
+    }
+
+
+# ── CONSUMIDOR ────────────────────────────────────────────────────────────
+
+def _buscar_serie_bcb(codigo: int, anos: int = 5):
+    data_limite = f"{2026 - anos}-01-01"
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT data, nome_serie, valor FROM macro_bcb WHERE codigo_serie = ? AND data >= ? ORDER BY data",
+        (codigo, data_limite),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+@app.get("/api/consumidor/confianca")
+def get_confianca(anos: int = 5):
+    """Retorna ICC e ICE lado a lado."""
+    return {
+        "icc": {"codigo": 4393, "nome": "Índice de Confiança do Consumidor (FGV)", "dados": _buscar_serie_bcb(4393, anos)},
+        "ice": {"codigo": 4395, "nome": "Índice de Confiança Empresarial (FGV)", "dados": _buscar_serie_bcb(4395, anos)},
+    }
+
+
+@app.get("/api/consumidor/endividamento")
+def get_endividamento(anos: int = 5):
+    """Retorna endividamento das famílias (% da renda)."""
+    dados = _buscar_serie_bcb(29039, anos)
+    return {"codigo": 29039, "nome": "Endividamento das famílias (% renda)", "registros": len(dados), "dados": dados}
+
+
+@app.get("/api/consumidor/massa-salarial")
+def get_massa_salarial(anos: int = 5):
+    """Retorna massa salarial real (R$ bilhões)."""
+    dados = _buscar_serie_bcb(17633, anos)
+    return {"codigo": 17633, "nome": "Massa salarial real (R$ bilhões)", "registros": len(dados), "dados": dados}
+
+
+@app.get("/api/consumidor/painel")
+def get_painel_consumidor(anos: int = 5):
+    """Retorna ICC, ICE, endividamento e massa salarial juntos."""
+    return {
+        "icc": {"codigo": 4393, "nome": "Índice de Confiança do Consumidor (FGV)", "dados": _buscar_serie_bcb(4393, anos)},
+        "ice": {"codigo": 4395, "nome": "Índice de Confiança Empresarial (FGV)", "dados": _buscar_serie_bcb(4395, anos)},
+        "endividamento": {"codigo": 29039, "nome": "Endividamento das famílias (% renda)", "dados": _buscar_serie_bcb(29039, anos)},
+        "massa_salarial": {"codigo": 17633, "nome": "Massa salarial real (R$ bilhões)", "dados": _buscar_serie_bcb(17633, anos)},
     }
 
 

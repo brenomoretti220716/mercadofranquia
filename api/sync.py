@@ -28,6 +28,10 @@ SERIES_BCB = {
     1:     "USD/BRL",
     4380:  "PIB trimestral",
     24369: "Desemprego",
+    4393:  "ICC",
+    4395:  "ICE",
+    29039: "Endividamento famílias",
+    17633: "Massa salarial real",
 }
 
 # Séries diárias (Selic, USD) são muito grandes desde 2014, buscar em chunks

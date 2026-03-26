@@ -242,6 +242,72 @@ async def salvar_relatorio(payload: dict):
     return {"status": "ok", "periodo": periodo, "relatorio_id": rel_id}
 
 
+# ── MACRO: BCB E IBGE ─────────────────────────────────────────────────────
+
+SERIES_BCB_MAP = {
+    "selic": 11,
+    "ipca": 433,
+    "dolar": 1,
+    "usd": 1,
+    "pib": 4380,
+    "desemprego": 24369,
+}
+
+@app.get("/api/macro/bcb")
+def get_macro_bcb(serie: str = "selic", anos: int = 5):
+    """Retorna série histórica do BCB. Séries: selic, ipca, dolar, pib, desemprego."""
+    codigo = SERIES_BCB_MAP.get(serie.lower())
+    if not codigo:
+        raise HTTPException(400, f"Série '{serie}' não encontrada. Opções: {', '.join(SERIES_BCB_MAP.keys())}")
+
+    data_limite = f"{2026 - anos}-01-01"
+    conn = get_conn()
+    rows = conn.execute(
+        """SELECT data, nome_serie, valor FROM macro_bcb
+           WHERE codigo_serie = ? AND data >= ?
+           ORDER BY data""",
+        (codigo, data_limite),
+    ).fetchall()
+    conn.close()
+    return {"serie": serie, "codigo": codigo, "registros": len(rows), "dados": [dict(r) for r in rows]}
+
+
+@app.get("/api/macro/ibge")
+def get_macro_ibge(indicador: str = "pib_estado"):
+    """Retorna dados do IBGE. Indicadores: pib_estado, varejo."""
+    indicadores_map = {
+        "pib_estado": 5938,
+        "varejo": 8881,
+    }
+    codigo = indicadores_map.get(indicador.lower())
+    if not codigo:
+        raise HTTPException(400, f"Indicador '{indicador}' não encontrado. Opções: {', '.join(indicadores_map.keys())}")
+
+    conn = get_conn()
+    rows = conn.execute(
+        """SELECT data, variavel, localidade, valor FROM macro_ibge
+           WHERE codigo_agregado = ?
+           ORDER BY data, localidade""",
+        (codigo,),
+    ).fetchall()
+    conn.close()
+    return {"indicador": indicador, "codigo": codigo, "registros": len(rows), "dados": [dict(r) for r in rows]}
+
+
+@app.get("/api/sync/status")
+def get_sync_status():
+    """Retorna o último sync de cada fonte."""
+    conn = get_conn()
+    rows = conn.execute(
+        """SELECT fonte, status, registros_inseridos, erro, created_at
+           FROM sync_log
+           WHERE id IN (SELECT MAX(id) FROM sync_log GROUP BY fonte)
+           ORDER BY created_at DESC""",
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 @app.get("/")
 def root():
     return {"status": "ok", "api": "ABF Franquias Intelligence", "docs": "/docs"}

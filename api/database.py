@@ -1,7 +1,8 @@
 import sqlite3, os, json
 from datetime import datetime
 
-DB_PATH = os.environ.get("DATABASE_URL", "abf.db")
+_DEFAULT_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "abf.db")
+DB_PATH = os.environ.get("DATABASE_URL", _DEFAULT_DB)
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
@@ -93,6 +94,38 @@ def init_db():
         unidades_var_pct REAL,
         empregos_var_pct REAL,
         created_at      TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS macro_bcb (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        data        TEXT NOT NULL,
+        codigo_serie INTEGER NOT NULL,
+        nome_serie  TEXT NOT NULL,
+        valor       REAL NOT NULL,
+        fonte       TEXT DEFAULT 'BCB',
+        created_at  TEXT DEFAULT (datetime('now')),
+        UNIQUE(data, codigo_serie)
+    );
+
+    CREATE TABLE IF NOT EXISTS macro_ibge (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        data            TEXT NOT NULL,
+        codigo_agregado INTEGER NOT NULL,
+        variavel        TEXT NOT NULL,
+        localidade      TEXT NOT NULL,
+        valor           REAL,
+        fonte           TEXT DEFAULT 'IBGE',
+        created_at      TEXT DEFAULT (datetime('now')),
+        UNIQUE(data, codigo_agregado, variavel, localidade)
+    );
+
+    CREATE TABLE IF NOT EXISTS sync_log (
+        id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+        fonte               TEXT NOT NULL,
+        status              TEXT NOT NULL,
+        registros_inseridos INTEGER DEFAULT 0,
+        erro                TEXT,
+        created_at          TEXT DEFAULT (datetime('now'))
     );
     """)
     conn.commit()

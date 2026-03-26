@@ -124,12 +124,81 @@ Salva dados revisados no banco (upsert).
 {"status": "ok", "periodo": "3T2025", "relatorio_id": 28}
 ```
 
+---
+
+## Fontes de dados externas
+
+### BCB (Banco Central do Brasil)
+
+Endpoint: `GET /api/macro/bcb?serie=selic&anos=5`
+
+| Série | Código | Descrição |
+|---|---|---|
+| `selic` | 11 | Taxa Selic |
+| `ipca` | 433 | Inflação IPCA |
+| `dolar` / `usd` | 1 | Câmbio USD/BRL |
+| `pib` | 4380 | PIB trimestral |
+| `desemprego` | 24369 | Taxa de desemprego |
+
+**Resposta:**
+```json
+{
+  "serie": "selic",
+  "codigo": 11,
+  "registros": 120,
+  "dados": [{"data": "2021-01-01", "nome_serie": "Selic", "valor": 2.0}]
+}
+```
+
+### IBGE (Instituto Brasileiro de Geografia e Estatística)
+
+Endpoint: `GET /api/macro/ibge?indicador=pib_estado`
+
+| Indicador | Código | Descrição |
+|---|---|---|
+| `pib_estado` | 5938 | PIB por estado (variável 37) |
+| `varejo` | 8881 | PMC — Pesquisa Mensal de Comércio (variável 11709) |
+
+**Resposta:**
+```json
+{
+  "indicador": "pib_estado",
+  "codigo": 5938,
+  "registros": 297,
+  "dados": [{"data": "2014", "variavel": "PIB...", "localidade": "São Paulo", "valor": 1858196.0}]
+}
+```
+
+### Status do sync
+
+Endpoint: `GET /api/sync/status`
+
+**Resposta:**
+```json
+[
+  {"fonte": "BCB/Selic (11)", "status": "ok", "registros_inseridos": 2800, "erro": null, "created_at": "2026-03-25 12:00:00"}
+]
+```
+
+### Sync manual
+
+```bash
+cd api && python3 sync.py
+```
+
+O sync também roda automaticamente via GitHub Actions toda segunda-feira às 10h UTC.
+
+---
+
 ## Banco de dados
 
 SQLite (`abf.db`) com as tabelas:
 - `relatorios` — metadata dos relatórios importados
 - `faturamento` — valores de faturamento por período/segmento
 - `indicadores` — empregos, redes, unidades
-- `macro` — dados macroeconômicos (PIB, IPCA, Selic)
+- `macro` — dados macroeconômicos (PIB, IPCA, Selic) dos relatórios ABF
+- `macro_bcb` — séries históricas do Banco Central (Selic, IPCA, câmbio, PIB, desemprego)
+- `macro_ibge` — dados agregados do IBGE (PIB por estado, varejo)
 - `ranking` — ranking das maiores franquias
 - `projecoes` — projeções de crescimento vs. realizado
+- `sync_log` — log de cada execução de sync (fonte, status, quantidade, erro)

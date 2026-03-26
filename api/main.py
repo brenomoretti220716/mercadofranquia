@@ -425,6 +425,23 @@ def get_sync_status():
     return [dict(r) for r in rows]
 
 
+@app.get("/api/admin/stats")
+def get_admin_stats():
+    """Retorna contagem de registros por tabela."""
+    conn = get_conn()
+    tabelas = ["relatorios", "faturamento", "indicadores", "ranking", "projecoes",
+               "macro_bcb", "macro_ibge", "pmc_ibge", "caged_bcb", "sync_log"]
+    result = []
+    for t in tabelas:
+        try:
+            count = conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+            result.append({"tabela": t, "registros": count})
+        except Exception:
+            result.append({"tabela": t, "registros": 0})
+    conn.close()
+    return result
+
+
 @app.get("/")
 def root():
     return {"status": "ok", "api": "ABF Franquias Intelligence", "docs": "/docs"}

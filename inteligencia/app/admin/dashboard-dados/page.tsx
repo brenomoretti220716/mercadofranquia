@@ -57,22 +57,19 @@ export default async function DashboardDadosPage() {
   const segAnual = segmentos.filter((r: any) => r.segmento !== "Total")
 
   const kpis = [
-    { label: "Faturamento 2024", valor: `R$ ${(ultimo.valor_mm / 1000).toFixed(0)} bi`, sub: `+${varAnual}% vs 2023`, cor: "#1D9E75" },
-    { label: "Crescimento 11 anos", valor: "+108%", sub: "R$ 127 bi para R$ 265 bi", cor: "#888" },
-    { label: "Empregos diretos", valor: emprego ? `${(emprego.empregos_diretos / 1000000).toFixed(2)} mi` : "1,80 mi", sub: `~${empregosPorUnidade} por unidade`, cor: "#888" },
-    { label: "Serie historica", valor: "11 anos", sub: `${totais.length} periodos anuais`, cor: "#888" },
+    { label: "Faturamento 2024", valor: `R$ ${(ultimo.valor_mm / 1000).toFixed(0)} bi`, sub: `+${varAnual}% vs 2023`, cor: "#E8421A" },
+    { label: "Crescimento 11 anos", valor: "+108%", sub: "R$ 127 bi para R$ 265 bi", cor: "#999" },
+    { label: "Empregos diretos", valor: emprego ? `${(emprego.empregos_diretos / 1000000).toFixed(2)} mi` : "1,80 mi", sub: `~${empregosPorUnidade} por unidade`, cor: "#999" },
+    { label: "Serie historica", valor: "11 anos", sub: `${totais.length} periodos anuais`, cor: "#999" },
   ]
 
   return (
     <>
       <div className="mb-6">
-        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "#1D9E75" }}>
-          Franquias Intelligence
-        </p>
-        <h1 className="text-2xl font-medium" style={{ color: "#1a1a18" }}>
-          Mercado de Franchising Brasileiro
+        <h1 className="text-2xl font-bold" style={{ color: "#1A1A1A" }}>
+          Intelligence Dashboard
         </h1>
-        <p className="text-sm mt-1" style={{ color: "#888" }}>
+        <p className="text-sm mt-1" style={{ color: "#666" }}>
           Dados ABF 2014-2025 · BCB · IBGE · CAGED · Atualizado Mar/2026
         </p>
       </div>
@@ -102,7 +99,7 @@ export default async function DashboardDadosPage() {
         }}
       />
 
-      <p className="text-center mt-8" style={{ fontSize: 11, color: "#ccc" }}>
+      <p className="text-center mt-8" style={{ fontSize: 11, color: "#BBB" }}>
         Fonte: ABF · BCB · IBGE/PMC · CAGED · FGV · mercadofranquia.com.br
       </p>
     </>

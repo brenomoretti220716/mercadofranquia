@@ -4,10 +4,6 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
-const BG = "#f4f3ef"
-const COR_PRIMARIA = "#1D9E75"
-const COR_TEXTO = "#1a1a18"
-
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
@@ -37,24 +33,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#F8F8F8" }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: COR_PRIMARIA }}>
-            Franquias Intelligence
-          </p>
-          <h1 className="text-xl font-medium" style={{ color: COR_TEXTO }}>
-            Backoffice
+          <h1 className="text-2xl font-bold" style={{ color: "#1A1A1A" }}>
+            Mercado <span style={{ color: "#E8421A" }}>Franquia</span>
           </h1>
+          <p className="text-sm mt-1" style={{ color: "#666666" }}>
+            Intelligence Backoffice
+          </p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl p-6"
-          style={{ background: "#fff", border: "0.5px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+          className="p-6"
+          style={{ background: "#fff", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
         >
           <div className="mb-4">
-            <label className="block text-xs font-medium mb-1.5" style={{ color: "#888" }}>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: "#666666" }}>
               Email
             </label>
             <input
@@ -62,14 +58,14 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-lg text-sm outline-none transition-all"
-              style={{ border: "1px solid #e0dfda", color: COR_TEXTO, background: BG }}
+              className="w-full px-3 py-2.5 text-sm outline-none transition-all"
+              style={{ border: "1px solid #E5E5E5", borderRadius: 8, color: "#1A1A1A", background: "#F8F8F8" }}
               placeholder="admin@mercadofranquia.com.br"
             />
           </div>
 
           <div className="mb-5">
-            <label className="block text-xs font-medium mb-1.5" style={{ color: "#888" }}>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: "#666666" }}>
               Senha
             </label>
             <input
@@ -77,14 +73,14 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-lg text-sm outline-none transition-all"
-              style={{ border: "1px solid #e0dfda", color: COR_TEXTO, background: BG }}
+              className="w-full px-3 py-2.5 text-sm outline-none transition-all"
+              style={{ border: "1px solid #E5E5E5", borderRadius: 8, color: "#1A1A1A", background: "#F8F8F8" }}
               placeholder="********"
             />
           </div>
 
           {error && (
-            <p className="text-xs mb-4 text-center" style={{ color: "#E24B4A" }}>
+            <p className="text-xs mb-4 text-center" style={{ color: "#E8421A" }}>
               {error}
             </p>
           )}
@@ -92,14 +88,14 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg text-sm font-medium text-white transition-opacity"
-            style={{ background: COR_PRIMARIA, opacity: loading ? 0.6 : 1 }}
+            className="w-full py-2.5 text-sm font-semibold text-white transition-all"
+            style={{ background: "#E8421A", borderRadius: 8, opacity: loading ? 0.6 : 1 }}
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
 
-        <p className="text-center mt-6" style={{ fontSize: 11, color: "#ccc" }}>
+        <p className="text-center mt-6" style={{ fontSize: 11, color: "#BBBBBB" }}>
           mercadofranquia.com.br
         </p>
       </div>

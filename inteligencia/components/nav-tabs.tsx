@@ -45,21 +45,18 @@ export default function NavTabs({ data }: { data: AllData }) {
 
   return (
     <>
-      {/* Barra de abas */}
       <div
-        className="flex gap-0 overflow-x-auto mb-6 -mx-2 px-2"
-        style={{ borderBottom: "1px solid #e0dfda" }}
+        className="flex gap-0 overflow-x-auto mb-6"
+        style={{ borderBottom: "1px solid #E5E5E5" }}
       >
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className="px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-all shrink-0"
+            className="px-5 py-3 text-xs font-semibold whitespace-nowrap transition-all shrink-0"
             style={{
-              background: activeTab === tab.id ? "#fff" : "transparent",
-              color: activeTab === tab.id ? "#1a1a18" : "#888",
-              borderBottom: activeTab === tab.id ? "2px solid #1D9E75" : "2px solid transparent",
-              borderRadius: "8px 8px 0 0",
+              color: activeTab === tab.id ? "#E8421A" : "#999",
+              borderBottom: activeTab === tab.id ? "2px solid #E8421A" : "2px solid transparent",
               marginBottom: -1,
             }}
           >
@@ -68,7 +65,6 @@ export default function NavTabs({ data }: { data: AllData }) {
         ))}
       </div>
 
-      {/* Conteúdo da aba ativa */}
       {activeTab === "visao-geral" && (
         <TabVisaoGeral
           kpis={data.kpis}

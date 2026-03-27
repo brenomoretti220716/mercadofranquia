@@ -5,19 +5,13 @@ import { CenarioMacro } from "@/components/macro-charts"
 import { PainelConsumidor } from "@/components/consumidor-charts"
 import { EmpregoFormal } from "@/components/comparativo-charts"
 
-const SECOES = [
-  { id: "confianca", label: "Confianca e Consumo" },
-  { id: "juros", label: "Juros, Inflacao e Cambio" },
-  { id: "emprego", label: "Emprego Formal" },
-] as const
-
 function SectionTitle({ children, open, onClick }: { children: React.ReactNode; open: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick} className="flex items-center gap-3 mt-8 mb-4 w-full text-left group">
-      <span className="text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "#1a1a18" }}>
+      <span className="text-[11px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: "#1A1A1A" }}>
         {open ? "\u25BC" : "\u25B6"} {children}
       </span>
-      <div className="flex-1 h-px" style={{ background: "#e0dfda" }} />
+      <div className="flex-1 h-px" style={{ background: "#E5E5E5" }} />
     </button>
   )
 }

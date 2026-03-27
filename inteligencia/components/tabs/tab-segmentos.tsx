@@ -5,6 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
   BarChart, Bar, Cell,
 } from "recharts"
+import { InsightBox, h } from "@/components/insight-box"
 
 const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 const CORES: Record<string, string> = {
@@ -227,10 +228,25 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
   const maxSeg = segmentos[0]?.valor_mm ?? 1
   const pmcDados = pmcData?.dados || []
 
+  // ── Insights calculados ──────────────────────────────────────────
+  const segCrescimentos = useMemo(() => {
+    return heatmapData
+      .filter((r) => !r._isTotal && r.variacao != null)
+      .sort((a, b) => (b.variacao ?? 0) - (a.variacao ?? 0))
+  }, [heatmapData])
+  const maiorCresc = segCrescimentos[0]
+  const menorCresc = segCrescimentos[segCrescimentos.length - 1]
+
   return (
     <>
       {/* 1. EVOLUÇÃO ANO A ANO */}
       <SectionTitle>Evolucao do Faturamento por Segmento</SectionTitle>
+      {maiorCresc && menorCresc && (
+        <InsightBox insights={[
+          `Segmento de maior crescimento: ${h(maiorCresc.segmento)} com ${h("+" + maiorCresc.variacao + "%")} no periodo`,
+          `Menor crescimento: ${h(menorCresc.segmento)} (${h((menorCresc.variacao >= 0 ? "+" : "") + menorCresc.variacao + "%")})`,
+        ]} />
+      )}
       <div className="p-6 mb-4" style={CARD}>
         <div className="flex items-center justify-between mb-4">
           <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>

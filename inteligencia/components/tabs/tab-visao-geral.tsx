@@ -5,6 +5,7 @@ import {
   LineChart, Line, Legend,
 } from "recharts"
 import { Card, CardContent } from "@/components/ui/card"
+import { InsightBox, h } from "@/components/insight-box"
 
 const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 const COR_PRIMARIA = "#E8421A"
@@ -87,6 +88,25 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   const maxPib = top10[0]?.valor_bi ?? 1
   const regioes = [...new Set(top10.map((d: any) => d.regiao))] as string[]
 
+  // ── Cálculos de insights ────────────────────────────────────────────
+  const primeiro = serieAnual[0]
+  const ultimoAnual = serieAnual.filter((s) => !s.parcial).pop() || serieAnual[serieAnual.length - 1]
+  const crescTotal = primeiro && ultimoAnual ? Math.round(((ultimoAnual.valor_bi / primeiro.valor_bi) - 1) * 100) : 0
+  const queda2020 = serieAnual.find((s) => s.periodo === "2020")
+  const pre2020 = serieAnual.find((s) => s.periodo === "2019")
+  const var2020 = queda2020 && pre2020 ? +((queda2020.valor_bi / pre2020.valor_bi - 1) * 100).toFixed(1) : 0
+
+  const anosAcimaDosPib = serieFatVsPib.filter((s) => s.abf !== null && s.pib !== null && s.abf! > s.pib!).length
+  const totalAnosComparativo = serieFatVsPib.filter((s) => s.abf !== null && s.pib !== null).length
+  const mediaSuperacao = totalAnosComparativo > 0
+    ? +(serieFatVsPib.filter((s) => s.abf !== null && s.pib !== null).reduce((acc, s) => acc + (s.abf! - s.pib!), 0) / totalAnosComparativo).toFixed(1)
+    : 0
+
+  const totalFat = segmentos.reduce((acc, s) => acc + s.valor_mm, 0)
+  const top3Fat = segmentos.slice(0, 3).reduce((acc, s) => acc + s.valor_mm, 0)
+  const top3Pct = totalFat > 0 ? Math.round((top3Fat / totalFat) * 100) : 0
+  const liderPct = totalFat > 0 ? Math.round((segmentos[0]?.valor_mm / totalFat) * 100) : 0
+
   return (
     <>
       {/* KPIs */}
@@ -101,6 +121,10 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
       </div>
 
       <SectionTitle>Faturamento</SectionTitle>
+      <InsightBox insights={[
+        `O setor cresceu ${h(crescTotal + "%")} nos ultimos 11 anos, de R$ ${h(primeiro?.valor_bi)} bi em ${primeiro?.periodo} para R$ ${h(ultimoAnual?.valor_bi)} bi em ${ultimoAnual?.periodo}`,
+        `Unico ano de queda foi 2020 (${h(var2020 + "%")}) devido a pandemia — recuperacao completa em 2021`,
+      ]} />
       <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
         <div className="p-6" style={CARD}>
           <div className="flex items-center justify-between mb-4">
@@ -120,7 +144,10 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
           </ResponsiveContainer>
         </div>
         <div className="p-6" style={CARD}>
-          <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>Top segmentos 2023</div>
+          <div className="text-[11px] uppercase tracking-wider font-semibold mb-3" style={{ color: "#999" }}>Top segmentos</div>
+          <div className="mb-3 px-2.5 py-2" style={{ background: "#FFF0ED", borderLeft: "3px solid #E8421A", borderRadius: 6, fontSize: 11 }}>
+            {segmentos[0]?.segmento} lidera com <strong style={{ color: "#E8421A" }}>R$ {(segmentos[0]?.valor_mm / 1000).toFixed(1)} bi</strong> ({liderPct}% do total). Top 3 = {top3Pct}% do setor.
+          </div>
           <div className="flex flex-col gap-3">
             {segmentos.slice(0, 8).map((r, i) => (
               <div key={r.segmento}>
@@ -152,6 +179,9 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
       </div>
 
       <SectionTitle>Franchising vs PIB</SectionTitle>
+      <InsightBox insights={[
+        `Franchising cresceu em media ${h(mediaSuperacao + "pp")} acima do PIB — em ${h(anosAcimaDosPib)} dos ultimos ${h(totalAnosComparativo)} anos superou a economia`,
+      ]} />
       <div className="p-6 mb-4" style={CARD}>
         <div className="flex items-center justify-between mb-4">
           <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>Crescimento anual — Franchising ABF vs PIB Brasil (%)</div>

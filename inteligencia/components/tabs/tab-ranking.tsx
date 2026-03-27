@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { InsightBox, h } from "@/components/insight-box"
 
 const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 const COR_PRIMARIA = "#E8421A"
@@ -25,8 +26,35 @@ export function TabRanking({ ranking, segmentos }: Props) {
     return filtered.slice(0, 50)
   }, [ranking, anoAtivo, segFiltro])
 
+  // ── Insights ──────────────────────────────────────────────────────
+  const rankingInsights = useMemo(() => {
+    if (rankingFiltrado.length === 0) return []
+    const lider = rankingFiltrado[0]
+    const segundo = rankingFiltrado[1]
+    const insights: string[] = []
+
+    if (lider) {
+      const liderVantagem = segundo ? Math.round(((lider.unidades / segundo.unidades) - 1) * 100) : 0
+      insights.push(`${h(lider.marca)} lidera com ${h(lider.unidades?.toLocaleString("pt-BR"))} unidades${segundo ? ` — ${h(liderVantagem + "%")} mais que ${segundo.marca}` : ""}`)
+    }
+
+    const top10Unidades = rankingFiltrado.slice(0, 10).reduce((acc: number, r: any) => acc + (r.unidades || 0), 0)
+    const totalUnidades = rankingFiltrado.reduce((acc: number, r: any) => acc + (r.unidades || 0), 0)
+    if (totalUnidades > 0) {
+      insights.push(`Top 10 marcas concentram ${h(Math.round((top10Unidades / totalUnidades) * 100) + "%")} de todas as unidades do ranking`)
+    }
+
+    const maiorCrescimento = rankingFiltrado.filter((r: any) => r.var_pct > 0).sort((a: any, b: any) => b.var_pct - a.var_pct)[0]
+    if (maiorCrescimento) {
+      insights.push(`Maior crescimento: ${h(maiorCrescimento.marca)} ${h("+" + maiorCrescimento.var_pct?.toFixed(1) + "%")} vs ano anterior`)
+    }
+
+    return insights
+  }, [rankingFiltrado])
+
   return (
     <>
+      {rankingInsights.length > 0 && <InsightBox insights={rankingInsights} />}
       {/* Filtros */}
       <div className="flex flex-wrap items-center gap-4 mb-5">
         <div className="flex items-center gap-2">

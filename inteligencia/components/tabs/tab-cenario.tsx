@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { CenarioMacro } from "@/components/macro-charts"
 import { PainelConsumidor } from "@/components/consumidor-charts"
 import { EmpregoFormal } from "@/components/comparativo-charts"
+import { InsightBox, h } from "@/components/insight-box"
 
 function SectionTitle({ children, open, onClick }: { children: React.ReactNode; open: boolean; onClick: () => void }) {
   return (
@@ -38,27 +39,105 @@ export function TabCenario({ selic, ipca, dolar, desemprego, consumidorPainel, c
     })
   }
 
+  // ── Insights calculados dos dados ──────────────────────────────────
+  const confiancaInsights = useMemo(() => {
+    const insights: string[] = []
+    const iccDados = consumidorPainel?.icc?.dados || []
+    const iceDados = consumidorPainel?.ice?.dados || []
+    if (iccDados.length > 0) {
+      const iccAtual = iccDados[iccDados.length - 1]?.valor
+      if (iccAtual > 110) insights.push(`Confianca do consumidor em ${h(iccAtual.toFixed(1))} — nivel favoravel para expansao de franquias`)
+      else if (iccAtual < 90) insights.push(`Confianca do consumidor em ${h(iccAtual.toFixed(1))} — momento de cautela, consumidor retraido`)
+      else insights.push(`Confianca do consumidor em ${h(iccAtual.toFixed(1))} — nivel neutro`)
+
+      if (iceDados.length > 0) {
+        const iceAtual = iceDados[iceDados.length - 1]?.valor
+        const diff = +(iceAtual - iccAtual).toFixed(1)
+        insights.push(`ICE ${diff > 0 ? h("+" + diff) : h(String(diff))} pontos ${diff > 0 ? "acima" : "abaixo"} do ICC — empresarios ${diff > 0 ? "mais" : "menos"} otimistas que consumidores`)
+      }
+    }
+    const endivDados = consumidorPainel?.endividamento?.dados || []
+    if (endivDados.length > 0) {
+      const endivAtual = endivDados[endivDados.length - 1]?.valor
+      insights.push(`${h(endivAtual.toFixed(1) + "%")} da renda das familias comprometida com dividas — impacto direto na capacidade de investir em franquias`)
+    }
+    return insights
+  }, [consumidorPainel])
+
+  const jurosInsights = useMemo(() => {
+    const insights: string[] = []
+    const selicDados = selic?.dados || []
+    const ipcaDados = ipca?.dados || []
+    if (selicDados.length > 0) {
+      const selicDiaria = selicDados[selicDados.length - 1]?.valor
+      const selicAnual = ((1 + selicDiaria / 100) ** 252 - 1) * 100
+      insights.push(`Selic em ${h(selicAnual.toFixed(2) + "% a.a.")} — ${selicAnual > 10 ? "encarece o credito para novos franqueados" : "ambiente de credito favoravel"}`)
+    }
+    if (ipcaDados.length >= 12) {
+      const ultimos12 = ipcaDados.slice(-12)
+      const ipca12m = ultimos12.reduce((acc: number, d: any) => acc * (1 + d.valor / 100), 1)
+      const ipca12mPct = +((ipca12m - 1) * 100).toFixed(2)
+      insights.push(`IPCA de ${h(ipca12mPct + "%")} nos ultimos 12 meses — ${ipca12mPct > 4.5 ? "acima" : ipca12mPct < 3 ? "abaixo" : "dentro"} da meta de 3%`)
+    }
+    return insights
+  }, [selic, ipca])
+
+  const empregoInsights = useMemo(() => {
+    const insights: string[] = []
+    const comercioDados = cagedComercio?.dados || []
+    const servicosDados = cagedServicos?.dados || []
+    const saldoComercio12m = comercioDados.slice(-12).reduce((acc: number, d: any) => acc + (d.saldo || 0), 0)
+    const saldoServicos12m = servicosDados.slice(-12).reduce((acc: number, d: any) => acc + (d.saldo || 0), 0)
+    const saldoTotal = saldoComercio12m + saldoServicos12m
+    if (saldoTotal !== 0) {
+      insights.push(`Comercio e servicos geraram ${h(Math.round(saldoTotal / 1000) + " mil")} vagas nos ultimos 12 meses`)
+    }
+    if (empregosAbf) {
+      const estoqueComercio = comercioDados.length > 0 ? comercioDados[comercioDados.length - 1]?.estoque || 0 : 0
+      const estoqueServicos = servicosDados.length > 0 ? servicosDados[servicosDados.length - 1]?.estoque || 0 : 0
+      const estoqueTotal = estoqueComercio + estoqueServicos
+      if (estoqueTotal > 0) {
+        const pct = +((empregosAbf / estoqueTotal) * 100).toFixed(1)
+        insights.push(`Franchising emprega diretamente ${h(pct + "%")} do total de comercio + servicos`)
+      }
+    }
+    return insights
+  }, [cagedComercio, cagedServicos, empregosAbf])
+
   return (
     <>
       <SectionTitle open={openSections.has("confianca")} onClick={() => toggle("confianca")}>
         Confianca e Consumo
       </SectionTitle>
-      {openSections.has("confianca") && <PainelConsumidor painel={consumidorPainel} />}
+      {openSections.has("confianca") && (
+        <>
+          {confiancaInsights.length > 0 && <InsightBox insights={confiancaInsights} />}
+          <PainelConsumidor painel={consumidorPainel} />
+        </>
+      )}
 
       <SectionTitle open={openSections.has("juros")} onClick={() => toggle("juros")}>
         Juros, Inflacao e Cambio
       </SectionTitle>
-      {openSections.has("juros") && <CenarioMacro selic={selic} ipca={ipca} dolar={dolar} desemprego={desemprego} />}
+      {openSections.has("juros") && (
+        <>
+          {jurosInsights.length > 0 && <InsightBox insights={jurosInsights} />}
+          <CenarioMacro selic={selic} ipca={ipca} dolar={dolar} desemprego={desemprego} />
+        </>
+      )}
 
       <SectionTitle open={openSections.has("emprego")} onClick={() => toggle("emprego")}>
         Emprego Formal
       </SectionTitle>
       {openSections.has("emprego") && (
-        <EmpregoFormal
-          cagedComercio={cagedComercio?.dados || []}
-          cagedServicos={cagedServicos?.dados || []}
-          empregosAbf={empregosAbf}
-        />
+        <>
+          {empregoInsights.length > 0 && <InsightBox insights={empregoInsights} />}
+          <EmpregoFormal
+            cagedComercio={cagedComercio?.dados || []}
+            cagedServicos={cagedServicos?.dados || []}
+            empregosAbf={empregosAbf}
+          />
+        </>
       )}
     </>
   )

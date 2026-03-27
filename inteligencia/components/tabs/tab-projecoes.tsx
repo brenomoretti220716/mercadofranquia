@@ -2,6 +2,7 @@
 
 import { useMemo } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { InsightBox, h } from "@/components/insight-box"
 
 const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 const COR_PRIMARIA = "#E8421A"
@@ -27,17 +28,18 @@ export function TabProjecoes({ projecoes }: { projecoes: Projecao[] }) {
 
   const superouCount = sorted.filter((p) => p.fat_realizado_pct > p.fat_var_max_pct).length
   const totalAnos = sorted.length
+  const mediaSuperacao = sorted.length > 0
+    ? +(sorted.reduce((acc, p) => acc + (p.fat_realizado_pct - p.fat_var_max_pct), 0) / sorted.length).toFixed(1)
+    : 0
+  const ultimo2025 = sorted.find((p) => p.ano_referencia === 2025)
 
   return (
     <>
-      <div className="mb-5 p-4" style={{ background: "#FFF0ED", borderRadius: 12, border: "1px solid #FFDDD3" }}>
-        <div className="text-sm font-semibold" style={{ color: "#C93510" }}>
-          O setor superou a projecao da ABF em {superouCount} dos ultimos {totalAnos} anos
-        </div>
-        <div className="text-xs mt-1" style={{ color: "#E8421A" }}>
-          Franchising consistentemente entrega acima das expectativas do proprio setor.
-        </div>
-      </div>
+      <InsightBox insights={[
+        `O setor superou a projecao da ABF em ${h(superouCount)} dos ultimos ${h(totalAnos)} anos`,
+        `Media de superacao: ${h("+" + mediaSuperacao + "pp")} acima do teto projetado`,
+        ...(ultimo2025 ? [`2025: projecao de +${ultimo2025.fat_var_min_pct}% a +${ultimo2025.fat_var_max_pct}% vs realizado parcial de ${h("+" + ultimo2025.fat_realizado_pct + "%")} — caminho para superar novamente`] : []),
+      ]} />
 
       <div className="p-6" style={CARD}>
         <div className="flex items-center justify-between mb-4">

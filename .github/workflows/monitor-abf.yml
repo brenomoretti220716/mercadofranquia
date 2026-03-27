@@ -1,0 +1,141 @@
+name: Monitor novo relatório ABF
+
+on:
+  schedule:
+    - cron: '0 9 * * 1,4'  # Segunda e quinta às 9h UTC
+  workflow_dispatch: {}
+
+jobs:
+  verificar-abf:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verificar novo relatório ABF
+        id: check
+        run: |
+          python3 << 'PYEOF'
+          import json, re, sys
+          from urllib.request import urlopen, Request
+          from datetime import datetime
+
+          URL = "https://www.abf.com.br/inteligencia-de-mercado/"
+          HEADERS = {"User-Agent": "MercadoFranquia-Monitor/1.0"}
+
+          # Últimos períodos conhecidos no banco (hardcoded, atualizar quando sync roda)
+          PERIODOS_CONHECIDOS = [
+              "4T2025", "3T2025", "1T2025",
+              "4T2024", "3T2024", "2T2024", "1T2024",
+              "4T2023", "3T2023",
+          ]
+
+          def periodo_para_data(p):
+              """Converte '3T2025' para uma data comparável."""
+              tri = int(p[0])
+              ano = int(p[2:])
+              mes = tri * 3
+              return datetime(ano, mes, 28)
+
+          ultimo_conhecido = max(PERIODOS_CONHECIDOS, key=periodo_para_data)
+          ultimo_data = periodo_para_data(ultimo_conhecido)
+
+          print(f"Último período conhecido: {ultimo_conhecido}")
+
+          try:
+              req = Request(URL, headers=HEADERS)
+              html = urlopen(req, timeout=30).read().decode("utf-8", errors="ignore")
+          except Exception as e:
+              print(f"Erro ao acessar ABF: {e}")
+              sys.exit(1)
+
+          # Procurar padrões de relatório: "1T2026", "2T2026", "Desempenho do Franchising", PDFs
+          padrao_periodo = re.findall(r'[1-4]T20[2-3]\d', html)
+          padrao_pdf = re.findall(r'href="([^"]*\.pdf[^"]*)"', html, re.IGNORECASE)
+          padrao_desempenho = re.findall(r'[Dd]esempenho.*?[1-4].\s*[Tt]rimestre.*?20[2-3]\d', html)
+
+          periodos_encontrados = list(set(padrao_periodo))
+          novos = []
+
+          for p in periodos_encontrados:
+              if p not in PERIODOS_CONHECIDOS:
+                  p_data = periodo_para_data(p)
+                  if p_data > ultimo_data:
+                      novos.append(p)
+
+          novos.sort(key=periodo_para_data, reverse=True)
+
+          pdfs_relevantes = [pdf for pdf in padrao_pdf if any(n.lower() in pdf.lower() for n in ["desempenho", "franchising", "trimestre"])]
+
+          with open("check-result.json", "w") as f:
+              json.dump({
+                  "novos": novos,
+                  "pdfs": pdfs_relevantes[:5],
+                  "desempenho_refs": padrao_desempenho[:5],
+                  "todos_periodos": periodos_encontrados,
+              }, f)
+
+          if novos:
+              print(f"NOVO RELATÓRIO ENCONTRADO: {', '.join(novos)}")
+              with open("$GITHUB_OUTPUT" if "$GITHUB_OUTPUT" != "$GITHUB_OUTPUT" else "/dev/null", "a") as f:
+                  pass
+          else:
+              print("Nenhum novo relatório encontrado.")
+
+          PYEOF
+
+          # Exportar resultado para steps seguintes
+          if [ -f check-result.json ]; then
+            NOVOS=$(python3 -c "import json; d=json.load(open('check-result.json')); print(','.join(d['novos']))")
+            echo "novos=$NOVOS" >> $GITHUB_OUTPUT
+            echo "tem_novo=$( [ -n '$NOVOS' ] && echo 'true' || echo 'false' )" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Criar issue se novo relatório
+        if: steps.check.outputs.novos != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let result = {};
+            try {
+              result = JSON.parse(fs.readFileSync('check-result.json', 'utf8'));
+            } catch {}
+
+            const novos = result.novos || [];
+            const pdfs = result.pdfs || [];
+            const periodo = novos[0] || 'desconhecido';
+
+            const pdfLinks = pdfs.length > 0
+              ? pdfs.map(p => `- ${p}`).join('\n')
+              : '_Nenhum PDF detectado automaticamente_';
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📊 Novo relatório ABF disponível: ${periodo}`,
+              body: [
+                `## Novo relatório ABF detectado`,
+                ``,
+                `**Períodos novos:** ${novos.join(', ')}`,
+                `**Página ABF:** https://www.abf.com.br/inteligencia-de-mercado/`,
+                ``,
+                `### PDFs encontrados`,
+                pdfLinks,
+                ``,
+                `### Próximos passos`,
+                `- [ ] Baixar o PDF do relatório`,
+                `- [ ] Upload no backoffice: /admin/upload`,
+                `- [ ] Revisar dados extraídos pela IA`,
+                `- [ ] Publicar relatório`,
+                ``,
+                `_Detectado automaticamente pelo monitor ABF_`,
+              ].join('\n'),
+              labels: ['dados', 'abf']
+            });

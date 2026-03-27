@@ -164,15 +164,6 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
       <Paragrafo>
         O franchising brasileiro e um dos mercados mais resilientes da economia. Com R$ {serieAnual[serieAnual.length - 1]?.valor_bi} bilhoes em faturamento e mais de 1,8 milhao de empregos diretos, o setor segue em expansao mesmo em cenarios adversos.
       </Paragrafo>
-      <div className="grid grid-cols-4 gap-4 mb-4">
-        {kpis.map((k, i) => (
-          <div key={i} className="p-5" style={CARD}>
-            <div className="uppercase tracking-wider font-semibold mb-2" style={{ color: "#999", fontSize: 12 }}>{k.label}</div>
-            <div className="font-bold" style={{ color: i === 0 ? P : "#1A1A1A", fontSize: 36 }}>{k.valor}</div>
-            <div className="mt-1 font-medium" style={{ color: i === 0 ? P : "#999", fontSize: 12 }}>{k.sub}</div>
-          </div>
-        ))}
-      </div>
 
       {/* ═══ DESTAQUES DO ANO ═══ */}
       {(() => {
@@ -256,6 +247,16 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
           </div>
         )
       })()}
+
+      <div className="grid grid-cols-4 gap-4 mb-4">
+        {kpis.map((k, i) => (
+          <div key={i} className="p-5" style={CARD}>
+            <div className="uppercase tracking-wider font-semibold mb-2" style={{ color: "#999", fontSize: 12 }}>{k.label}</div>
+            <div className="font-bold" style={{ color: i === 0 ? P : "#1A1A1A", fontSize: 36 }}>{k.valor}</div>
+            <div className="mt-1 font-medium" style={{ color: i === 0 ? P : "#999", fontSize: 12 }}>{k.sub}</div>
+          </div>
+        ))}
+      </div>
 
       {/* ═══ UMA DÉCADA DE CRESCIMENTO ═══ */}
       <Secao titulo="Uma Decada de Crescimento Consistente" />

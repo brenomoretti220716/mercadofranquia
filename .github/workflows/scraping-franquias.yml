@@ -47,6 +47,10 @@ jobs:
           fi
           python3 scrapers/franquias_abf.py $ARGS 2>&1 | tee scrape-output.log
 
+      - name: Enriquecer franquias (segmentos e sites)
+        working-directory: api
+        run: python3 scrapers/enriquecer_franquias.py --etapa 2 2>&1 | tee -a scrape-output.log
+
       - name: Criar issue se falhou
         if: failure()
         env:

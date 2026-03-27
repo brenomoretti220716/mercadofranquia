@@ -20,16 +20,17 @@ jobs:
 
       - name: Verificar novo relatório ABF
         id: check
+        env:
+          GH_OUTPUT: ${{ github.output }}
         run: |
-          python3 << 'PYEOF'
-          import json, re, sys
+          python3 << PYEOF
+          import json, os, re, sys
           from urllib.request import urlopen, Request
           from datetime import datetime
 
           URL = "https://www.abf.com.br/inteligencia-de-mercado/"
           HEADERS = {"User-Agent": "MercadoFranquia-Monitor/1.0"}
 
-          # Últimos períodos conhecidos no banco (hardcoded, atualizar quando sync roda)
           PERIODOS_CONHECIDOS = [
               "4T2025", "3T2025", "1T2025",
               "4T2024", "3T2024", "2T2024", "1T2024",
@@ -37,16 +38,13 @@ jobs:
           ]
 
           def periodo_para_data(p):
-              """Converte '3T2025' para uma data comparável."""
               tri = int(p[0])
               ano = int(p[2:])
-              mes = tri * 3
-              return datetime(ano, mes, 28)
+              return datetime(ano, tri * 3, 28)
 
           ultimo_conhecido = max(PERIODOS_CONHECIDOS, key=periodo_para_data)
           ultimo_data = periodo_para_data(ultimo_conhecido)
-
-          print(f"Último período conhecido: {ultimo_conhecido}")
+          print(f"Ultimo periodo conhecido: {ultimo_conhecido}")
 
           try:
               req = Request(URL, headers=HEADERS)
@@ -55,50 +53,34 @@ jobs:
               print(f"Erro ao acessar ABF: {e}")
               sys.exit(1)
 
-          # Procurar padrões de relatório: "1T2026", "2T2026", "Desempenho do Franchising", PDFs
-          padrao_periodo = re.findall(r'[1-4]T20[2-3]\d', html)
+          padrao_periodo = re.findall(r"[1-4]T20[2-3]\d", html)
           padrao_pdf = re.findall(r'href="([^"]*\.pdf[^"]*)"', html, re.IGNORECASE)
-          padrao_desempenho = re.findall(r'[Dd]esempenho.*?[1-4].\s*[Tt]rimestre.*?20[2-3]\d', html)
 
           periodos_encontrados = list(set(padrao_periodo))
-          novos = []
-
-          for p in periodos_encontrados:
-              if p not in PERIODOS_CONHECIDOS:
-                  p_data = periodo_para_data(p)
-                  if p_data > ultimo_data:
-                      novos.append(p)
-
+          novos = [p for p in periodos_encontrados if p not in PERIODOS_CONHECIDOS and periodo_para_data(p) > ultimo_data]
           novos.sort(key=periodo_para_data, reverse=True)
 
-          pdfs_relevantes = [pdf for pdf in padrao_pdf if any(n.lower() in pdf.lower() for n in ["desempenho", "franchising", "trimestre"])]
+          pdfs_relevantes = [pdf for pdf in padrao_pdf if any(k in pdf.lower() for k in ["desempenho", "franchising", "trimestre"])]
 
           with open("check-result.json", "w") as f:
-              json.dump({
-                  "novos": novos,
-                  "pdfs": pdfs_relevantes[:5],
-                  "desempenho_refs": padrao_desempenho[:5],
-                  "todos_periodos": periodos_encontrados,
-              }, f)
+              json.dump({"novos": novos, "pdfs": pdfs_relevantes[:5], "todos_periodos": periodos_encontrados}, f)
 
           if novos:
-              print(f"NOVO RELATÓRIO ENCONTRADO: {', '.join(novos)}")
-              with open("$GITHUB_OUTPUT" if "$GITHUB_OUTPUT" != "$GITHUB_OUTPUT" else "/dev/null", "a") as f:
-                  pass
+              print(f"NOVO RELATORIO ENCONTRADO: {', '.join(novos)}")
           else:
-              print("Nenhum novo relatório encontrado.")
-
+              print("Nenhum novo relatorio encontrado.")
           PYEOF
 
-          # Exportar resultado para steps seguintes
+          # Exportar resultado
           if [ -f check-result.json ]; then
             NOVOS=$(python3 -c "import json; d=json.load(open('check-result.json')); print(','.join(d['novos']))")
-            echo "novos=$NOVOS" >> $GITHUB_OUTPUT
-            echo "tem_novo=$( [ -n '$NOVOS' ] && echo 'true' || echo 'false' )" >> $GITHUB_OUTPUT
+            echo "novos=$NOVOS" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Criar issue se novo relatório
         if: steps.check.outputs.novos != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         uses: actions/github-script@v7
         with:
           script: |
@@ -119,7 +101,7 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `📊 Novo relatório ABF disponível: ${periodo}`,
+              title: `Novo relatório ABF disponível: ${periodo}`,
               body: [
                 `## Novo relatório ABF detectado`,
                 ``,

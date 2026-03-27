@@ -1,8 +1,8 @@
-import { getFaturamentoAnual, getSegmentos, getIndicadores, getProjecoes, getRanking, getMacroBCB, getMacroIBGE, getVarejoPMC, getEmpregoCaged, getConsumidorPainel, getInvestimentoPorSegmento } from "@/lib/api"
+import { getFaturamentoAnual, getSegmentos, getIndicadores, getProjecoes, getRanking, getMacroBCB, getMacroIBGE, getVarejoPMC, getEmpregoCaged, getConsumidorPainel } from "@/lib/api"
 import NavTabs from "@/components/nav-tabs"
 
 export default async function DashboardDadosPage() {
-  const [anual, segmentos, indicadores, projecoes, ranking, selic, ipca, dolar, desemprego, pibTrimestral, pibEstado, pmcData, cagedComercio, cagedServicos, consumidorPainel, investSegmento] = await Promise.all([
+  const [anual, segmentos, indicadores, projecoes, ranking, selic, ipca, dolar, desemprego, pibTrimestral, pibEstado, pmcData, cagedComercio, cagedServicos, cagedAlojamento, cagedTotal, consumidorPainel] = await Promise.all([
     getFaturamentoAnual(),
     getSegmentos("anual"),
     getIndicadores(),
@@ -17,8 +17,9 @@ export default async function DashboardDadosPage() {
     getVarejoPMC(36),
     getEmpregoCaged("comercio", 36),
     getEmpregoCaged("servicos", 36),
+    getEmpregoCaged("alojamento", 36),
+    getEmpregoCaged("total", 36),
     getConsumidorPainel(3),
-    getInvestimentoPorSegmento(),
   ])
 
   const totais = anual
@@ -115,7 +116,8 @@ export default async function DashboardDadosPage() {
           cagedServicos,
           consumidorPainel,
           empregosAbf: emprego?.empregos_diretos ?? null,
-          investSegmento,
+          cagedAlojamento,
+          cagedTotal,
           trimestrais: anual.filter((r: any) => r.tipo_dado === "trimestral" && r.segmento === "Total"),
         }}
       />

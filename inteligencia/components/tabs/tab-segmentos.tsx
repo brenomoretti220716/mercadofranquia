@@ -6,7 +6,6 @@ import {
   BarChart, Bar, Cell, ReferenceLine,
 } from "recharts"
 import { InsightBox, h, GraficoRodape } from "@/components/insight-box"
-import { CustoEntradaSegmento } from "@/components/custo-entrada-segmento"
 
 const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 const CORES: Record<string, string> = {
@@ -64,20 +63,21 @@ function extrairAnoNum(periodo: string): number {
 }
 
 const COMPARATIVOS = [
-  { titulo: "Saude/Beleza vs Farma", codigoPMC: "103155", segABF: ["Saúde, Beleza e Bem-Estar"] },
-  { titulo: "Moda vs Tecidos", codigoPMC: "90673", segABF: ["Moda"] },
-  { titulo: "Alimentacao vs Hiper", codigoPMC: "90672", segABF: ["Alimentação", "Alimentação - FS", "Alimentação - CD"] },
+  { titulo: "Saude/Beleza vs Farma/Cosmeticos", codigoPMC: "103155", segABF: ["Saúde, Beleza e Bem-Estar"] },
+  { titulo: "Alimentacao vs Hiper/Super", codigoPMC: "90672", segABF: ["Alimentação", "Alimentação - FS", "Alimentação - CD"] },
+  { titulo: "Moda vs Tecidos/Vestuario", codigoPMC: "90673", segABF: ["Moda"] },
   { titulo: "Casa vs Moveis/Eletro", codigoPMC: "2759", segABF: ["Casa e Construção"] },
+  { titulo: "TI vs Informatica/Comunicacao", codigoPMC: "103159", segABF: ["Comunicação/TI"] },
+  { titulo: "Varejo Geral vs Combustiveis", codigoPMC: "103157", segABF: [] },
 ]
 
 interface Props {
   segmentos: any[]
   segmentosAnual: any[]
   pmcData: any
-  investSegmento: any[]
 }
 
-export function TabSegmentos({ segmentos, segmentosAnual, pmcData, investSegmento }: Props) {
+export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
   const [selectedSeg, setSelectedSeg] = useState<string | null>(null)
   const [hiddenLines, setHiddenLines] = useState<Set<string>>(new Set())
   const [showAll, setShowAll] = useState(false)
@@ -383,17 +383,6 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData, investSegment
         </div>
       </div>
 
-      {/* CUSTO DE ENTRADA POR SEGMENTO */}
-      {investSegmento && investSegmento.length > 0 && (
-        <>
-          <SectionTitle>Quanto Custa Entrar em Cada Segmento?</SectionTitle>
-          <p className="mb-4" style={{ fontSize: 14, color: "#444", lineHeight: 1.7 }}>
-            O investimento inicial varia drasticamente entre segmentos. Use o slider para ver quais segmentos cabem no seu orcamento.
-          </p>
-          <CustoEntradaSegmento dados={investSegmento} />
-        </>
-      )}
-
       {/* 2. DETALHE DO SEGMENTO SELECIONADO */}
       {selectedSeg && detalhe && (
         <>
@@ -548,7 +537,7 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData, investSegment
       <InsightBox insights={[
         `Comparativo entre o crescimento anual do franchising (ABF) e a variacao do varejo geral (IBGE/PMC) por segmento equivalente`,
       ]} />
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         {COMPARATIVOS.map((comp) => {
           // PMC: variação anual (YoY) mensal
           const pmcFilt = pmcDados

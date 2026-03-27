@@ -25,10 +25,13 @@ interface Props {
   consumidorPainel: any
   cagedComercio: any
   cagedServicos: any
+  cagedAlojamento: any
+  cagedTotal: any
   empregosAbf: number | null
+  indicadores: any[]
 }
 
-export function TabCenario({ selic, ipca, dolar, desemprego, consumidorPainel, cagedComercio, cagedServicos, empregosAbf }: Props) {
+export function TabCenario({ selic, ipca, dolar, desemprego, consumidorPainel, cagedComercio, cagedServicos, cagedAlojamento, cagedTotal, empregosAbf, indicadores }: Props) {
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(["confianca", "juros", "emprego"]))
 
   const toggle = (id: string) => {
@@ -86,23 +89,29 @@ export function TabCenario({ selic, ipca, dolar, desemprego, consumidorPainel, c
     const insights: string[] = []
     const comercioDados = cagedComercio?.dados || []
     const servicosDados = cagedServicos?.dados || []
+    const alojDados = cagedAlojamento?.dados || []
     const saldoComercio12m = comercioDados.slice(-12).reduce((acc: number, d: any) => acc + (d.saldo || 0), 0)
     const saldoServicos12m = servicosDados.slice(-12).reduce((acc: number, d: any) => acc + (d.saldo || 0), 0)
-    const saldoTotal = saldoComercio12m + saldoServicos12m
+    const saldoAloj12m = alojDados.slice(-12).reduce((acc: number, d: any) => acc + (d.saldo || 0), 0)
+    const saldoTotal = saldoComercio12m + saldoServicos12m + saldoAloj12m
     if (saldoTotal !== 0) {
-      insights.push(`Comercio e servicos geraram ${h(Math.round(saldoTotal / 1000) + " mil")} vagas nos ultimos 12 meses`)
+      insights.push(`Comercio, servicos e alojamento geraram ${h(Math.round(saldoTotal / 1000) + " mil")} vagas nos ultimos 12 meses`)
+    }
+    if (saldoAloj12m !== 0) {
+      insights.push(`Alojamento e alimentacao (setor das franquias de food) gerou ${h(Math.round(saldoAloj12m / 1000) + " mil")} vagas — setor mais diretamente ligado a franquias`)
     }
     if (empregosAbf) {
       const estoqueComercio = comercioDados.length > 0 ? comercioDados[comercioDados.length - 1]?.estoque || 0 : 0
       const estoqueServicos = servicosDados.length > 0 ? servicosDados[servicosDados.length - 1]?.estoque || 0 : 0
-      const estoqueTotal = estoqueComercio + estoqueServicos
+      const estoqueAloj = alojDados.length > 0 ? alojDados[alojDados.length - 1]?.estoque || 0 : 0
+      const estoqueTotal = estoqueComercio + estoqueServicos + estoqueAloj
       if (estoqueTotal > 0) {
         const pct = +((empregosAbf / estoqueTotal) * 100).toFixed(1)
-        insights.push(`Franchising emprega diretamente ${h(pct + "%")} do total de comercio + servicos`)
+        insights.push(`Franchising emprega ${h(pct + "%")} do total de comercio + servicos + alojamento`)
       }
     }
     return insights
-  }, [cagedComercio, cagedServicos, empregosAbf])
+  }, [cagedComercio, cagedServicos, cagedAlojamento, empregosAbf])
 
   return (
     <>

@@ -4,14 +4,12 @@ import { useState } from "react"
 import { TabVisaoGeral } from "@/components/tabs/tab-visao-geral"
 import { TabSegmentos } from "@/components/tabs/tab-segmentos"
 import { TabCenario } from "@/components/tabs/tab-cenario"
-import { TabRanking } from "@/components/tabs/tab-ranking"
 import { TabProjecoes } from "@/components/tabs/tab-projecoes"
 
 const TABS = [
   { id: "visao-geral", label: "Visao Geral" },
   { id: "segmentos", label: "Segmentos ABF" },
   { id: "cenario", label: "Cenario Economico" },
-  { id: "ranking", label: "Ranking de Marcas" },
   { id: "projecoes", label: "Projecoes" },
 ] as const
 
@@ -36,9 +34,10 @@ export interface AllData {
   pmcData: any
   cagedComercio: any
   cagedServicos: any
+  cagedAlojamento: any
+  cagedTotal: any
   consumidorPainel: any
   empregosAbf: number | null
-  investSegmento: any[]
   trimestrais: any[]
 }
 
@@ -47,7 +46,6 @@ export default function NavTabs({ data }: { data: AllData }) {
 
   return (
     <>
-      {/* Pills navigation */}
       <div className="flex gap-1.5 overflow-x-auto mb-6 p-1" style={{ background: "#F0F0F0", borderRadius: 10 }}>
         {TABS.map((tab) => (
           <button
@@ -88,7 +86,6 @@ export default function NavTabs({ data }: { data: AllData }) {
           segmentos={data.segmentos}
           segmentosAnual={data.segmentosAnual}
           pmcData={data.pmcData}
-          investSegmento={data.investSegmento}
         />
       )}
       {activeTab === "cenario" && (
@@ -100,11 +97,11 @@ export default function NavTabs({ data }: { data: AllData }) {
           consumidorPainel={data.consumidorPainel}
           cagedComercio={data.cagedComercio}
           cagedServicos={data.cagedServicos}
+          cagedAlojamento={data.cagedAlojamento}
+          cagedTotal={data.cagedTotal}
           empregosAbf={data.empregosAbf}
+          indicadores={data.indicadores}
         />
-      )}
-      {activeTab === "ranking" && (
-        <TabRanking ranking={data.ranking} segmentos={data.segmentos} />
       )}
       {activeTab === "projecoes" && (
         <TabProjecoes projecoes={data.projecoes} />

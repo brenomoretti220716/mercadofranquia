@@ -24,11 +24,9 @@ function Sidebar() {
       style={{ width: 220, background: "#0D0D0D" }}
     >
       <div>
-        <div className="mb-8 px-2">
-          <p className="text-sm font-bold text-white">
-            Mercado <span style={{ color: "#E8421A" }}>Franquia</span>
-          </p>
-          <p className="text-[10px] mt-0.5" style={{ color: "#555" }}>
+        <div className="mb-8">
+          <img src="/logo-white.png" alt="Mercado Franquia" style={{ width: 140 }} />
+          <p className="text-[10px] mt-1.5 px-1" style={{ color: "#555" }}>
             Intelligence Backoffice
           </p>
         </div>

@@ -36,10 +36,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center" style={{ background: "#F8F8F8" }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold" style={{ color: "#1A1A1A" }}>
-            Mercado <span style={{ color: "#E8421A" }}>Franquia</span>
-          </h1>
-          <p className="text-sm mt-1" style={{ color: "#666666" }}>
+          <img src="/logo-dark.png" alt="Mercado Franquia" style={{ width: 200, margin: "0 auto" }} />
+          <p className="text-sm mt-2" style={{ color: "#666666" }}>
             Intelligence Backoffice
           </p>
         </div>

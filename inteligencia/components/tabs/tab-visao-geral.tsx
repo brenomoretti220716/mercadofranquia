@@ -164,7 +164,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
       <Paragrafo>
         O franchising brasileiro e um dos mercados mais resilientes da economia. Com R$ {serieAnual[serieAnual.length - 1]?.valor_bi} bilhoes em faturamento e mais de 1,8 milhao de empregos diretos, o setor segue em expansao mesmo em cenarios adversos.
       </Paragrafo>
-      <div className="grid grid-cols-4 gap-4 mb-2">
+      <div className="grid grid-cols-4 gap-4 mb-4">
         {kpis.map((k, i) => (
           <div key={i} className="p-5" style={CARD}>
             <div className="uppercase tracking-wider font-semibold mb-2" style={{ color: "#999", fontSize: 12 }}>{k.label}</div>
@@ -173,6 +173,89 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
           </div>
         ))}
       </div>
+
+      {/* ═══ DESTAQUES DO ANO ═══ */}
+      {(() => {
+        // Card 1: Segmento do ano (líder por faturamento)
+        const lider = segmentos[0]
+        const liderBi = lider ? (lider.valor_mm / 1000).toFixed(1) : "0"
+
+        // Card 2: Maior crescimento (calcular do anual)
+        const segsCrescimento = segmentos.map((s: any) => {
+          const anoAnterior = anual.find((a: any) => a.segmento === s.segmento && a.tipo_dado === "anual" && a.periodo === "4T2022")
+          const crescPct = anoAnterior ? +((s.valor_mm / anoAnterior.valor_mm - 1) * 100).toFixed(1) : null
+          return { ...s, crescPct }
+        }).filter((s: any) => s.crescPct !== null)
+        const maiorCresc = segsCrescimento.sort((a: any, b: any) => (b.crescPct ?? 0) - (a.crescPct ?? 0))[0]
+
+        // Card 3: Total de empregos (último dado)
+        const empUltimo = serieEmpregos[serieEmpregos.length - 1]
+        const empAnterior = serieEmpregos.length >= 2 ? serieEmpregos[serieEmpregos.length - 2] : null
+        const empVar = empAnterior ? +((empUltimo.empregos / empAnterior.empregos - 1) * 100).toFixed(1) : 0
+
+        // Card 4: Pior desempenho
+        const piorCresc = [...segsCrescimento].sort((a: any, b: any) => (a.crescPct ?? 0) - (b.crescPct ?? 0))[0]
+
+        const DARK = { background: "#1A1A1A", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }
+
+        return (
+          <div className="grid grid-cols-4 gap-3 mb-4">
+            {/* Segmento do Ano */}
+            <div className="p-5 transition-all" style={{ ...DARK, border: "1px solid transparent" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = P }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "transparent" }}>
+              <span className="inline-block font-semibold px-2 py-0.5 mb-3" style={{ fontSize: 10, background: "#166534", color: "#22C55E", borderRadius: 4 }}>#1 Segmento</span>
+              <div className="mb-1" style={{ fontSize: 20 }}>🏆</div>
+              <div className="font-bold text-white mb-1" style={{ fontSize: 14 }}>{lider?.segmento}</div>
+              <div className="font-bold mb-1" style={{ fontSize: 22, color: P }}>R$ {liderBi} bi</div>
+              <div className="font-medium" style={{ fontSize: 11, color: "#22C55E" }}>
+                {totalFatSeg > 0 ? Math.round((lider?.valor_mm / totalFatSeg) * 100) : 0}% do setor
+              </div>
+            </div>
+
+            {/* Maior Crescimento */}
+            <div className="p-5 transition-all" style={{ ...DARK, border: "1px solid transparent" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = P }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "transparent" }}>
+              <span className="inline-block font-semibold px-2 py-0.5 mb-3" style={{ fontSize: 10, background: "#7C2D12", color: P, borderRadius: 4 }}>#1 Crescimento</span>
+              <div className="mb-1" style={{ fontSize: 20 }}>🚀</div>
+              <div className="font-bold text-white mb-1" style={{ fontSize: 14 }}>{maiorCresc?.segmento || "—"}</div>
+              <div className="font-bold mb-1" style={{ fontSize: 22, color: P }}>
+                {maiorCresc?.crescPct != null ? `+${maiorCresc.crescPct}%` : "—"}
+              </div>
+              <div className="font-medium" style={{ fontSize: 11, color: "#22C55E" }}>vs periodo anterior</div>
+            </div>
+
+            {/* Empregos */}
+            <div className="p-5 transition-all" style={{ ...DARK, border: "1px solid transparent" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = P }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "transparent" }}>
+              <span className="inline-block font-semibold px-2 py-0.5 mb-3" style={{ fontSize: 10, background: "#1E3A5F", color: "#60A5FA", borderRadius: 4 }}>Impacto Social</span>
+              <div className="mb-1" style={{ fontSize: 20 }}>🏳️</div>
+              <div className="font-bold text-white mb-1" style={{ fontSize: 14 }}>Empregos Diretos</div>
+              <div className="font-bold mb-1" style={{ fontSize: 22, color: P }}>
+                {empUltimo?.empregos_mi ? `${empUltimo.empregos_mi} mi` : "—"}
+              </div>
+              <div className="font-medium" style={{ fontSize: 11, color: empVar >= 0 ? "#22C55E" : "#EF4444" }}>
+                {empVar > 0 ? `+${empVar}%` : empVar < 0 ? `${empVar}%` : ""} vs ano anterior
+              </div>
+            </div>
+
+            {/* Pior Desempenho */}
+            <div className="p-5 transition-all" style={{ ...DARK, border: "1px solid transparent" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = P }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "transparent" }}>
+              <span className="inline-block font-semibold px-2 py-0.5 mb-3" style={{ fontSize: 10, background: "#7F1D1D", color: "#EF4444", borderRadius: 4 }}>Atencao</span>
+              <div className="mb-1" style={{ fontSize: 20 }}>⚠️</div>
+              <div className="font-bold text-white mb-1" style={{ fontSize: 14 }}>{piorCresc?.segmento || "—"}</div>
+              <div className="font-bold mb-1" style={{ fontSize: 22, color: piorCresc?.crescPct != null && piorCresc.crescPct < 0 ? "#EF4444" : P }}>
+                {piorCresc?.crescPct != null ? `${piorCresc.crescPct > 0 ? "+" : ""}${piorCresc.crescPct}%` : "—"}
+              </div>
+              <div className="font-medium" style={{ fontSize: 11, color: "#EF4444" }}>Menor crescimento do setor</div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ═══ UMA DÉCADA DE CRESCIMENTO ═══ */}
       <Secao titulo="Uma Decada de Crescimento Consistente" />

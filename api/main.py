@@ -483,12 +483,72 @@ def get_sync_status():
     return [dict(r) for r in rows]
 
 
+# ── FRANQUIAS ─────────────────────────────────────────────────────────────
+
+@app.get("/api/franquias/segmentos")
+def get_franquias_segmentos():
+    """Lista segmentos disponíveis com contagem."""
+    conn = get_conn()
+    rows = conn.execute(
+        """SELECT segmento, COUNT(*) as total
+           FROM franquias
+           GROUP BY segmento
+           ORDER BY total DESC"""
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+@app.get("/api/franquias/{slug}")
+def get_franquia_detalhe(slug: str):
+    """Retorna detalhes de uma franquia pelo slug."""
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM franquias WHERE slug = ?", (slug,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404, f"Franquia '{slug}' não encontrada.")
+    return dict(row)
+
+
+@app.get("/api/franquias")
+def get_franquias(segmento: str = None, investimento_max: float = None, page: int = 1, limit: int = 20):
+    """Lista franquias com filtros e paginação."""
+    conn = get_conn()
+    q = "SELECT * FROM franquias WHERE 1=1"
+    count_q = "SELECT COUNT(*) FROM franquias WHERE 1=1"
+    params = []
+
+    if segmento:
+        q += " AND segmento = ?"
+        count_q += " AND segmento = ?"
+        params.append(segmento)
+    if investimento_max:
+        q += " AND investimento_min <= ?"
+        count_q += " AND investimento_min <= ?"
+        params.append(investimento_max)
+
+    total = conn.execute(count_q, params).fetchone()[0]
+
+    q += " ORDER BY nome LIMIT ? OFFSET ?"
+    params.extend([limit, (page - 1) * limit])
+
+    rows = conn.execute(q, params).fetchall()
+    conn.close()
+    return {
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit,
+        "dados": [dict(r) for r in rows],
+    }
+
+
 @app.get("/api/admin/stats")
 def get_admin_stats():
     """Retorna contagem de registros por tabela."""
     conn = get_conn()
     tabelas = ["relatorios", "faturamento", "indicadores", "ranking", "projecoes",
-               "macro_bcb", "macro_ibge", "pmc_ibge", "caged_bcb", "sync_log"]
+               "macro_bcb", "macro_ibge", "pmc_ibge", "caged_bcb", "franquias", "sync_log"]
     result = []
     for t in tabelas:
         try:

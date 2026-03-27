@@ -139,6 +139,25 @@ def init_db():
         created_at  TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS franquias (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome            TEXT NOT NULL UNIQUE,
+        slug            TEXT NOT NULL,
+        segmento        TEXT,
+        investimento_min REAL,
+        investimento_max REAL,
+        num_unidades    INTEGER,
+        logo_url        TEXT,
+        site_oficial    TEXT,
+        descricao       TEXT,
+        selo_abf        BOOLEAN DEFAULT 0,
+        fonte           TEXT DEFAULT 'ABF/PortalFranchising',
+        url_fonte       TEXT,
+        data_coleta     TEXT,
+        created_at      TEXT DEFAULT (datetime('now')),
+        updated_at      TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS caged_bcb (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
         data        TEXT NOT NULL,

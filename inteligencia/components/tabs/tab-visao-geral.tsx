@@ -159,25 +159,20 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
       {/* ═══ TERMÔMETRO TRIMESTRAL ═══ */}
       <TermometroTrimestral trimestrais={trimestrais} />
 
-      {/* ═══ O FRANCHISING EM NÚMEROS ═══ */}
-      <Secao titulo="O Franchising Brasileiro em Numeros" />
-      <Paragrafo>
-        O franchising brasileiro e um dos mercados mais resilientes da economia. Com R$ {serieAnual[serieAnual.length - 1]?.valor_bi} bilhoes em faturamento e mais de 1,8 milhao de empregos diretos, o setor segue em expansao mesmo em cenarios adversos.
-      </Paragrafo>
-
       {/* ═══ DESTAQUES DO ANO ═══ */}
       {(() => {
         // Card 1: Segmento do ano (líder por faturamento)
         const lider = segmentos[0]
         const liderBi = lider ? (lider.valor_mm / 1000).toFixed(1) : "0"
 
-        // Card 2: Maior crescimento (calcular do anual)
+        // Card 2: Maior crescimento (calcular vs período anterior disponível)
         const segsCrescimento = segmentos.map((s: any) => {
-          const anoAnterior = anual.find((a: any) => a.segmento === s.segmento && a.tipo_dado === "anual" && a.periodo === "4T2022")
-          const crescPct = anoAnterior ? +((s.valor_mm / anoAnterior.valor_mm - 1) * 100).toFixed(1) : null
+          const anterior = anual.find((a: any) => a.segmento === s.segmento && a.tipo_dado === "anual" && a.periodo === "4T2023")
+            || anual.find((a: any) => a.segmento === s.segmento && a.tipo_dado === "anual" && a.periodo === "4T2022")
+          const crescPct = anterior ? +((s.valor_mm / anterior.valor_mm - 1) * 100).toFixed(1) : null
           return { ...s, crescPct }
         }).filter((s: any) => s.crescPct !== null)
-        const maiorCresc = segsCrescimento.sort((a: any, b: any) => (b.crescPct ?? 0) - (a.crescPct ?? 0))[0]
+        const maiorCresc = [...segsCrescimento].sort((a: any, b: any) => (b.crescPct ?? 0) - (a.crescPct ?? 0))[0]
 
         // Card 3: Total de empregos (último dado)
         const empUltimo = serieEmpregos[serieEmpregos.length - 1]
@@ -248,6 +243,11 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
         )
       })()}
 
+      {/* ═══ O FRANCHISING EM NÚMEROS ═══ */}
+      <Secao titulo="O Franchising Brasileiro em Numeros" />
+      <Paragrafo>
+        O franchising brasileiro e um dos mercados mais resilientes da economia. Com R$ {serieAnual[serieAnual.length - 1]?.valor_bi} bilhoes em faturamento e mais de 1,8 milhao de empregos diretos, o setor segue em expansao mesmo em cenarios adversos.
+      </Paragrafo>
       <div className="grid grid-cols-4 gap-4 mb-4">
         {kpis.map((k, i) => (
           <div key={i} className="p-5" style={CARD}>

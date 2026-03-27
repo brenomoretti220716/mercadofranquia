@@ -206,19 +206,26 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
       <Paragrafo>
         Nao basta saber que o setor cresce — e preciso saber onde crescer. Os 12 segmentos do franchising tem dinamicas muito distintas. Entender cada segmento e fundamental para escolher a franquia certa.
       </Paragrafo>
-      <div className="overflow-x-auto mb-4 -mx-1 px-1">
-        <div className="flex gap-2">
-          {segmentos.map((s: any) => {
-            const cor = CORES_SEG[s.segmento] || "#999"
-            return (
-              <div key={s.segmento} className="shrink-0 p-3 flex flex-col items-center gap-1" style={{ ...CARD, borderTop: `3px solid ${cor}`, minWidth: 110 }}>
-                <span className="font-semibold text-center" style={{ fontSize: 10, color: "#666" }}>{s.segmento}</span>
-                <span className="font-bold" style={{ fontSize: 16, color: "#1A1A1A" }}>R$ {(s.valor_mm / 1000).toFixed(1)} bi</span>
-                <span style={{ fontSize: 10, color: "#999" }}>{totalFatSeg > 0 ? Math.round((s.valor_mm / totalFatSeg) * 100) : 0}% do total</span>
+      <div className="grid grid-cols-3 gap-3 mb-3">
+        {segmentos.map((s: any, i: number) => {
+          const cor = CORES_SEG[s.segmento] || "#999"
+          const isLider = i === 0
+          return (
+            <div key={s.segmento} className="p-4 flex items-start justify-between" style={{ ...CARD, border: isLider ? `2px solid ${P}` : "1px solid #F0F0F0" }}>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold truncate mb-1" style={{ fontSize: 12, color: "#1A1A1A" }}>{s.segmento}</div>
+                <div className="font-bold" style={{ fontSize: 20, color: "#1A1A1A" }}>R$ {(s.valor_mm / 1000).toFixed(1)} bi</div>
+                <div style={{ fontSize: 11, color: "#999" }}>{totalFatSeg > 0 ? ((s.valor_mm / totalFatSeg) * 100).toFixed(1) : 0}% do total</div>
               </div>
-            )
-          })}
-        </div>
+              <span className="font-bold shrink-0 ml-2 inline-flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: "50%", background: i < 3 ? P : "#F0F0F0", color: i < 3 ? "#fff" : "#999", fontSize: 11 }}>
+                #{i + 1}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+      <div className="text-right mb-2">
+        <span className="font-semibold cursor-pointer" style={{ fontSize: 13, color: P }}>Analise detalhada por segmento →</span>
       </div>
 
       {/* ═══ CENÁRIO MACRO ═══ */}
@@ -295,61 +302,101 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
       {/* ═══ O QUE ESPERAR DE 2025 ═══ */}
       <Secao titulo="O Que Esperar de 2025" />
       <Paragrafo>
-        O conjunto de indicadores permite uma leitura integrada do momento. Combinando confianca do consumidor, custo do credito e trajetoria recente do setor, chegamos a um veredicto sobre o momento de investir.
+        O conjunto de indicadores permite uma leitura integrada do momento. Combinando confianca do consumidor, custo do credito e trajetoria recente do setor, chegamos a um balanco sobre o momento de investir.
       </Paragrafo>
-      <div className="p-6" style={{ ...CARD, borderLeft: `4px solid ${semaforoCor}` }}>
-        <div className="flex items-center gap-4 mb-5">
-          <div className="flex items-center justify-center" style={{ width: 60, height: 60, borderRadius: "50%", background: semaforoBg }}>
-            <span style={{ width: 26, height: 26, borderRadius: "50%", background: semaforoCor, display: "block" }} />
-          </div>
-          <div>
-            <div className="font-bold" style={{ fontSize: 22, color: semaforoCor }}>Momento {semaforoLabel}</div>
-            <div style={{ fontSize: 12, color: "#999" }}>Baseado em ICC, Selic e crescimento recente</div>
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-2.5 mb-5">
-          {[
-            { check: true, text: `Crescimento historico: ${crescTotal}% em 11 anos consecutivos` },
-            { check: anosAcimaPib > totalComp / 2, text: `vs PIB: superou em ${anosAcimaPib} dos ultimos ${totalComp} anos` },
-            { check: iccAtual > 100, text: `ICC: ${iccAtual.toFixed(0)} pontos (${iccAtual > 110 ? "favoravel" : iccAtual < 90 ? "desfavoravel" : "neutro"})` },
-            { check: desempAtual < 8, text: `Desemprego: ${desempAtual.toFixed(1)}% (${desempAtual < 7 ? "minima historica" : "moderado"})` },
-            { check: proj2025 ? proj2025.fat_realizado_pct > proj2025.fat_var_max_pct : false, text: proj2025 ? `Projecao 2025: ABF projeta +${proj2025.fat_var_min_pct}% a +${proj2025.fat_var_max_pct}%, realizado parcial +${proj2025.fat_realizado_pct}%` : "Sem projecao 2025" },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-2.5">
-              <span style={{ fontSize: 16 }}>{item.check ? "✅" : "⚠️"}</span>
-              <span style={{ fontSize: 14, color: "#1A1A1A" }}>{item.text}</span>
+      {/* Duas colunas: Favoráveis vs Atenção */}
+      {(() => {
+        const favoraveis = [
+          iccAtual > 100 ? `ICC em ${iccAtual.toFixed(0)} pontos — consumidor confiante` : null,
+          desempAtual < 8 ? `Desemprego em ${desempAtual.toFixed(1)}% — proxima de minima historica` : null,
+          massaVar12m > 0 ? `Massa salarial crescendo +${massaVar12m}%` : null,
+          proj2025 && proj2025.fat_realizado_pct > proj2025.fat_var_max_pct ? `Setor ja superou projecao ABF em 2025` : null,
+          anosAcimaPib > totalComp / 2 ? `Franchising superou PIB em ${anosAcimaPib} dos ultimos ${totalComp} anos` : null,
+          crescTotal > 50 ? `Crescimento de ${crescTotal}% em 11 anos` : null,
+        ].filter(Boolean) as string[]
+
+        const atencao = [
+          selicAtual > 12 ? `Selic em ${selicAtual.toFixed(1)}% — credito mais caro` : null,
+          endivAtual > 45 ? `Endividamento das familias em ${endivAtual.toFixed(1)}% da renda` : null,
+          Number(ipca12m) > 4.5 ? `IPCA de ${ipca12m}% — acima da meta de 3%` : null,
+          iccAtual < 90 ? `ICC abaixo de 90 — consumidor retraido` : null,
+          desempAtual > 10 ? `Desemprego acima de 10%` : null,
+        ].filter(Boolean) as string[]
+
+        const balanco = favoraveis.length > atencao.length ? "favoravel" : favoraveis.length < atencao.length ? "desfavoravel" : "equilibrado"
+
+        return (
+          <>
+            <div className="grid grid-cols-2 gap-4 mb-5">
+              <div className="p-5" style={{ background: "#F0FFF4", borderRadius: 12 }}>
+                <div className="font-bold mb-3" style={{ fontSize: 14, color: "#2E7D32" }}>Pontos Favoraveis</div>
+                <div className="flex flex-col gap-2">
+                  {favoraveis.map((f, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <span style={{ fontSize: 14, flexShrink: 0 }}>✅</span>
+                      <span style={{ fontSize: 13, color: "#1A1A1A" }}>{f}</span>
+                    </div>
+                  ))}
+                  {favoraveis.length === 0 && <span style={{ fontSize: 13, color: "#999" }}>Nenhum ponto claramente favoravel no momento</span>}
+                </div>
+              </div>
+              <div className="p-5" style={{ background: "#FFFBEB", borderRadius: 12 }}>
+                <div className="font-bold mb-3" style={{ fontSize: 14, color: "#92610E" }}>Pontos de Atencao</div>
+                <div className="flex flex-col gap-2">
+                  {atencao.map((a, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <span style={{ fontSize: 14, flexShrink: 0 }}>⚠️</span>
+                      <span style={{ fontSize: 13, color: "#1A1A1A" }}>{a}</span>
+                    </div>
+                  ))}
+                  {atencao.length === 0 && <span style={{ fontSize: 13, color: "#999" }}>Nenhum ponto critico de atencao</span>}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
 
-        {proj2025 && (
-          <div className="p-4 mb-4" style={{ background: "#F8F8F8", borderRadius: 8 }}>
-            <div className="uppercase tracking-wider font-semibold mb-1" style={{ fontSize: 11, color: "#999" }}>Projecao ABF 2025</div>
-            <div className="flex items-center gap-3">
-              <span style={{ fontSize: 14, color: "#999" }}>Projetado: +{proj2025.fat_var_min_pct}% a +{proj2025.fat_var_max_pct}%</span>
-              <span className="font-bold" style={{ fontSize: 14, color: P }}>Realizado parcial: +{proj2025.fat_realizado_pct}%</span>
-              {proj2025.fat_realizado_pct > proj2025.fat_var_max_pct && (
-                <span className="font-semibold px-2 py-0.5" style={{ fontSize: 11, background: "#E8F5E9", color: "#2E7D32", borderRadius: 4 }}>Superou</span>
+            {/* Semáforo de balanço */}
+            <div className="p-5 mb-4" style={{ ...CARD, borderLeft: `4px solid ${semaforoCor}` }}>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex items-center justify-center" style={{ width: 52, height: 52, borderRadius: "50%", background: semaforoBg }}>
+                  <span style={{ width: 22, height: 22, borderRadius: "50%", background: semaforoCor, display: "block" }} />
+                </div>
+                <div>
+                  <div className="font-bold" style={{ fontSize: 20, color: semaforoCor }}>Momento {semaforoLabel}</div>
+                  <div style={{ fontSize: 12, color: "#999" }}>{favoraveis.length} fatores positivos vs {atencao.length} fatores de atencao</div>
+                </div>
+              </div>
+
+              {proj2025 && (
+                <div className="p-4 mb-4" style={{ background: "#F8F8F8", borderRadius: 8 }}>
+                  <div className="uppercase tracking-wider font-semibold mb-1" style={{ fontSize: 11, color: "#999" }}>Projecao ABF 2025</div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span style={{ fontSize: 14, color: "#999" }}>Projetado: +{proj2025.fat_var_min_pct}% a +{proj2025.fat_var_max_pct}%</span>
+                    <span className="font-bold" style={{ fontSize: 14, color: P }}>Realizado parcial: +{proj2025.fat_realizado_pct}%</span>
+                    {proj2025.fat_realizado_pct > proj2025.fat_var_max_pct && (
+                      <span className="font-semibold px-2 py-0.5" style={{ fontSize: 11, background: "#E8F5E9", color: "#2E7D32", borderRadius: 4 }}>Superou</span>
+                    )}
+                  </div>
+                </div>
               )}
+
+              <span className="inline-block font-semibold px-3 py-1 mb-4" style={{ fontSize: 12, background: "#FFF0ED", color: P, borderRadius: 6 }}>
+                Setor superou projecao em {superouCount} dos ultimos {totalProj} anos
+              </span>
+
+              <div className="font-bold" style={{ fontSize: 16, color: "#1A1A1A", lineHeight: 1.6 }}>
+                {balanco === "favoravel"
+                  ? "O setor apresenta fundamentos solidos para investimento. A confianca do consumidor e o crescimento consistente compensam o custo elevado do credito — mas prefira capital proprio a financiamento."
+                  : balanco === "desfavoravel"
+                    ? "Indicadores macro sugerem cautela. O setor continua crescendo, mas o custo de entrada esta elevado e o consumidor pressionado. Avalie bem o segmento e a regiao."
+                    : "Momento equilibrado — fundamentos positivos coexistem com riscos. Oportunidades existem em segmentos especificos e regioes com maior potencial de demanda."}
+              </div>
+
+              <GraficoRodape fonte="ABF + BCB + FGV" periodo="ultimo disponivel" />
             </div>
-          </div>
-        )}
-
-        <span className="inline-block font-semibold px-3 py-1 mb-5" style={{ fontSize: 12, background: "#FFF0ED", color: P, borderRadius: 6 }}>
-          Setor superou projecao em {superouCount} dos ultimos {totalProj} anos
-        </span>
-
-        <div className="font-bold" style={{ fontSize: 18, color: "#1A1A1A", lineHeight: 1.6 }}>
-          {semaforo === "favoravel"
-            ? "O conjunto de indicadores aponta para um momento positivo para investir em franquias — confianca alta, credito acessivel e setor em crescimento."
-            : semaforo === "cautela"
-              ? "Indicadores macro sugerem cautela — avalie bem o segmento e a regiao antes de investir. O setor continua crescendo, mas o custo de entrada esta elevado."
-              : "Momento neutro — indicadores mistos. Oportunidades existem em segmentos especificos e regioes com maior potencial."}
-        </div>
-
-        <GraficoRodape fonte="ABF + BCB + FGV" periodo="ultimo disponivel" />
-      </div>
+          </>
+        )
+      })()}
     </>
   )
 }

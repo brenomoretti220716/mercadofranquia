@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid,
   LineChart, Line, Legend,
@@ -32,23 +31,17 @@ const CORES_SEG: Record<string, string> = {
   "Comunicação/TI": "#7C4DFF", "Entretenimento e Lazer": "#FF9800", "Limpeza e Conservação": "#795548",
 }
 
-const NAV_ITEMS = [
-  { id: "s-setor", label: "Tamanho do Setor" },
-  { id: "s-crescimento", label: "Crescimento" },
-  { id: "s-economia", label: "vs Economia" },
-  { id: "s-cenario", label: "Cenario" },
-  { id: "s-regiao", label: "Por Regiao" },
-  { id: "s-conclusao", label: "Conclusao" },
-]
-
-function Secao({ id, num, titulo }: { id: string; num: number; titulo: string }) {
+function Secao({ titulo }: { titulo: string }) {
   return (
-    <div id={id} className="flex items-center gap-3 mb-5" style={{ paddingTop: 80, marginTop: -32 }}>
-      <span className="inline-flex items-center justify-center shrink-0 font-bold text-white" style={{ width: 28, height: 28, borderRadius: "50%", background: P, fontSize: 13 }}>{num}</span>
-      <h3 className="font-semibold uppercase tracking-wide" style={{ color: "#1A1A1A", fontSize: 18 }}>{titulo}</h3>
+    <div className="flex items-center gap-3 mt-10 mb-3">
+      <h3 className="font-semibold" style={{ color: "#1A1A1A", fontSize: 18 }}>{titulo}</h3>
       <div className="flex-1 h-px" style={{ background: "#E5E5E5" }} />
     </div>
   )
+}
+
+function Paragrafo({ children }: { children: React.ReactNode }) {
+  return <p className="mb-5" style={{ fontSize: 14, color: "#444", lineHeight: 1.7 }}>{children}</p>
 }
 
 function selicAnualizada(taxaDiaria: number) { return ((1 + taxaDiaria / 100) ** 252 - 1) * 100 }
@@ -69,30 +62,7 @@ interface Props {
   projecoes: any[]
 }
 
-export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anual, pibTrimestral, pibEstado, selic, ipca, desemprego, consumidorPainel, projecoes }: Props) {
-  const [activeNav, setActiveNav] = useState("s-setor")
-  const [selectedSeg, setSelectedSeg] = useState<string | null>(null)
-
-  // IntersectionObserver for nav pills
-  useEffect(() => {
-    const ids = NAV_ITEMS.map((n) => n.id)
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveNav(entry.target.id)
-          }
-        }
-      },
-      { rootMargin: "-100px 0px -60% 0px", threshold: 0 }
-    )
-    for (const id of ids) {
-      const el = document.getElementById(id)
-      if (el) observer.observe(el)
-    }
-    return () => observer.disconnect()
-  }, [])
-
+export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestral, pibEstado, selic, ipca, desemprego, consumidorPainel, projecoes, serieEmpregos }: Props) {
   // ── Dados processados ─────────────────────────────────────────────
   const totais = anual.filter((r: any) => r.segmento === "Total").sort((a: any, b: any) => a.periodo.localeCompare(b.periodo))
 
@@ -161,39 +131,14 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   const totalProj = (projecoes || []).length
   const totalFatSeg = segmentos.reduce((acc: number, s: any) => acc + s.valor_mm, 0)
 
-  // Segmento selecionado
-  const segDetalhe = selectedSeg ? segmentos.find((s: any) => s.segmento === selectedSeg) : null
-  const segPosicao = selectedSeg ? segmentos.findIndex((s: any) => s.segmento === selectedSeg) + 1 : 0
-  const segPct = segDetalhe && totalFatSeg > 0 ? +((segDetalhe.valor_mm / totalFatSeg) * 100).toFixed(1) : 0
-
   return (
     <>
-      {/* ═══ BARRA NARRATIVA ═══ */}
-      <div className="sticky z-10 py-2.5 px-3 mb-4 -mx-2 overflow-x-auto" style={{ top: 0, background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderRadius: 10 }}>
-        <div className="flex items-center gap-1">
-          {NAV_ITEMS.map((item, i) => (
-            <div key={item.id} className="flex items-center shrink-0">
-              <a
-                href={`#${item.id}`}
-                className="px-3 py-1.5 font-semibold whitespace-nowrap transition-all"
-                style={{
-                  fontSize: 12,
-                  background: activeNav === item.id ? P : "#F0F0F0",
-                  color: activeNav === item.id ? "#fff" : "#666",
-                  borderRadius: 6,
-                }}
-              >
-                {item.label}
-              </a>
-              {i < NAV_ITEMS.length - 1 && <span className="mx-0.5" style={{ color: "#DDD", fontSize: 10 }}>→</span>}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ═══ SEÇÃO 1 — TAMANHO DO SETOR ═══ */}
-      <Secao id="s-setor" num={1} titulo="Tamanho do Setor" />
-      <div className="grid grid-cols-4 gap-4 mb-4">
+      {/* ═══ O FRANCHISING EM NÚMEROS ═══ */}
+      <Secao titulo="O Franchising Brasileiro em Numeros" />
+      <Paragrafo>
+        O franchising brasileiro e um dos mercados mais resilientes da economia. Com R$ {serieAnual[serieAnual.length - 1]?.valor_bi} bilhoes em faturamento e mais de 1,8 milhao de empregos diretos, o setor segue em expansao mesmo em cenarios adversos.
+      </Paragrafo>
+      <div className="grid grid-cols-4 gap-4 mb-2">
         {kpis.map((k, i) => (
           <div key={i} className="p-5" style={CARD}>
             <div className="uppercase tracking-wider font-semibold mb-2" style={{ color: "#999", fontSize: 12 }}>{k.label}</div>
@@ -203,59 +148,13 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
         ))}
       </div>
 
-      {/* Pills de segmento */}
-      <div className="overflow-x-auto mb-3 -mx-1 px-1">
-        <div className="flex gap-1.5">
-          {segmentos.map((s: any) => {
-            const cor = CORES_SEG[s.segmento] || "#999"
-            const active = selectedSeg === s.segmento
-            return (
-              <button
-                key={s.segmento}
-                onClick={() => setSelectedSeg(active ? null : s.segmento)}
-                className="px-3 py-1 font-semibold whitespace-nowrap shrink-0 transition-all"
-                style={{
-                  fontSize: 11,
-                  borderRadius: 20,
-                  background: active ? cor : "#F5F5F5",
-                  color: active ? "#fff" : "#666",
-                  border: `1px solid ${active ? cor : "#E5E5E5"}`,
-                }}
-              >
-                {s.segmento}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Mini card do segmento selecionado */}
-      {selectedSeg && segDetalhe && (
-        <div className="p-4 mb-4 flex items-center justify-between" style={{ ...CARD, borderLeft: `3px solid ${CORES_SEG[selectedSeg] || P}` }}>
-          <div className="flex items-center gap-6">
-            <div>
-              <div style={{ fontSize: 12, color: "#999" }}>Faturamento</div>
-              <div className="font-bold" style={{ fontSize: 22, color: "#1A1A1A" }}>R$ {(segDetalhe.valor_mm / 1000).toFixed(1)} bi</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "#999" }}>Participacao</div>
-              <div className="font-bold" style={{ fontSize: 22, color: "#1A1A1A" }}>{segPct}%</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "#999" }}>Posicao</div>
-              <div className="font-bold" style={{ fontSize: 22, color: P }}>#{segPosicao}</div>
-            </div>
-          </div>
-          <span className="font-semibold cursor-pointer" style={{ fontSize: 12, color: P }}>
-            Ver analise completa →
-          </span>
-        </div>
-      )}
-
-      {/* ═══ SEÇÃO 2 — CRESCIMENTO ═══ */}
-      <Secao id="s-crescimento" num={2} titulo="11 Anos de Crescimento" />
+      {/* ═══ UMA DÉCADA DE CRESCIMENTO ═══ */}
+      <Secao titulo="Uma Decada de Crescimento Consistente" />
+      <Paragrafo>
+        Em 11 anos, o setor mais que dobrou seu faturamento — crescimento de {crescTotal}%. O unico recuo aconteceu em 2020, durante a pandemia, e a recuperacao foi completa ja no ano seguinte. Esse padrao de resiliencia e um dos principais atrativos para investidores que buscam previsibilidade.
+      </Paragrafo>
       <InsightBox insights={[
-        `O setor cresceu ${h(crescTotal + "%")} em 11 anos, de R$ ${h(primeiro?.valor_bi)} bi (${primeiro?.periodo}) para R$ ${h(ultimoAnual?.valor_bi)} bi (${ultimoAnual?.periodo})`,
+        `Crescimento de ${h(crescTotal + "%")}: de R$ ${h(primeiro?.valor_bi)} bi (${primeiro?.periodo}) para R$ ${h(ultimoAnual?.valor_bi)} bi (${ultimoAnual?.periodo})`,
         `Unico ano de queda: 2020 (${h(var2020 + "%")}) — recuperacao completa em 2021`,
       ]} />
       <div className="p-6" style={CARD}>
@@ -276,8 +175,11 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
         <GraficoRodape fonte="ABF" periodo={`${primeiro?.periodo}-${serieAnual[serieAnual.length - 1]?.periodo}`} nota="R$ bilhoes correntes · * parcial" />
       </div>
 
-      {/* ═══ SEÇÃO 3 — VS ECONOMIA ═══ */}
-      <Secao id="s-economia" num={3} titulo="Franchising Supera a Economia" />
+      {/* ═══ FRANCHISING VS ECONOMIA ═══ */}
+      <Secao titulo="Franchising Cresce Mais que a Economia" />
+      <Paragrafo>
+        Enquanto o PIB brasileiro cresce a taxas modestas, o franchising consistentemente entrega resultados acima da media da economia. Essa diferenca — chamada de alfa do setor — indica que abrir uma franquia tende a ser mais rentavel que acompanhar o crescimento geral do mercado.
+      </Paragrafo>
       <InsightBox insights={[
         `Franchising cresceu em media ${h(mediaSup + "pp")} acima do PIB — em ${h(anosAcimaPib)} dos ultimos ${h(totalComp)} anos superou a economia`,
       ]} />
@@ -299,8 +201,31 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
         <GraficoRodape fonte="ABF + BCB" periodo="2015-2024" />
       </div>
 
-      {/* ═══ SEÇÃO 4 — CENÁRIO ═══ */}
-      <Secao id="s-cenario" num={4} titulo="O Cenario Atual" />
+      {/* ═══ SEGMENTOS ═══ */}
+      <Secao titulo="Onde Crescer: os 12 Segmentos" />
+      <Paragrafo>
+        Nao basta saber que o setor cresce — e preciso saber onde crescer. Os 12 segmentos do franchising tem dinamicas muito distintas. Entender cada segmento e fundamental para escolher a franquia certa.
+      </Paragrafo>
+      <div className="overflow-x-auto mb-4 -mx-1 px-1">
+        <div className="flex gap-2">
+          {segmentos.map((s: any) => {
+            const cor = CORES_SEG[s.segmento] || "#999"
+            return (
+              <div key={s.segmento} className="shrink-0 p-3 flex flex-col items-center gap-1" style={{ ...CARD, borderTop: `3px solid ${cor}`, minWidth: 110 }}>
+                <span className="font-semibold text-center" style={{ fontSize: 10, color: "#666" }}>{s.segmento}</span>
+                <span className="font-bold" style={{ fontSize: 16, color: "#1A1A1A" }}>R$ {(s.valor_mm / 1000).toFixed(1)} bi</span>
+                <span style={{ fontSize: 10, color: "#999" }}>{totalFatSeg > 0 ? Math.round((s.valor_mm / totalFatSeg) * 100) : 0}% do total</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ═══ CENÁRIO MACRO ═══ */}
+      <Secao titulo="O Que os Indicadores Dizem Sobre Agora" />
+      <Paragrafo>
+        Os indicadores macroeconomicos determinam o apetite do consumidor e o custo de entrada para novos franqueados. Um ICC alto sinaliza disposicao para gastar; uma Selic elevada encarece o financiamento. Juntos, eles formam o termometro do momento.
+      </Paragrafo>
       <InsightBox insights={[
         `Com ICC em ${h(iccAtual.toFixed(0))}, Selic em ${h(selicAtual.toFixed(1) + "%")}, IPCA em ${h(ipca12m + "%")} e desemprego em ${h(desempAtual.toFixed(1) + "%")}, o ambiente e ${h(semaforoLabel.toLowerCase())} para abertura de franquias`,
       ]} />
@@ -318,11 +243,6 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
           </div>
         ))}
       </div>
-
-      {/* Consumidor */}
-      <InsightBox insights={[
-        `Massa salarial de R$ ${h(massaBi.toFixed(0) + " bi")} (${massaVar12m > 0 ? "+" : ""}${h(massaVar12m + "%")} em 12m) e endividamento em ${h(endivAtual.toFixed(1) + "%")} da renda`,
-      ]} />
       <div className="grid grid-cols-4 gap-4">
         {[
           { label: "Endividamento", valor: endivAtual.toFixed(1) + "%", sub: "da renda familiar", cor: endivAtual > 45 ? COVID : "#2E7D32" },
@@ -339,10 +259,13 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
       </div>
       <GraficoRodape fonte="BCB + FGV" periodo="ultimo disponivel" />
 
-      {/* ═══ SEÇÃO 5 — REGIONAL ═══ */}
-      <Secao id="s-regiao" num={5} titulo="Potencial por Regiao" />
+      {/* ═══ POTENCIAL REGIONAL ═══ */}
+      <Secao titulo="Onde Esta o Potencial no Brasil" />
+      <Paragrafo>
+        A concentracao economica brasileira define onde ha mais espaco para franquias. Sao Paulo sozinho representa mais PIB que muitos paises, mas regioes emergentes como Nordeste e Centro-Oeste apresentam taxas de crescimento acima da media — e menos saturacao de redes.
+      </Paragrafo>
       <InsightBox insights={[
-        `${top10[0]?.estado}, ${top10[1]?.estado} e ${top10[2]?.estado} concentram ${h(top3PibPct + "%")} do PIB do top 10`,
+        `${top10[0]?.estado}, ${top10[1]?.estado} e ${top10[2]?.estado} concentram ${h(top3PibPct + "%")} do PIB do top 10 — maior potencial de mercado para franquias`,
       ]} />
       <div className="p-6" style={CARD}>
         <div className="flex items-center justify-between mb-5">
@@ -369,8 +292,11 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
         <GraficoRodape fonte="IBGE — Contas Regionais" periodo={anoRecente || "ultimo"} />
       </div>
 
-      {/* ═══ SEÇÃO 6 — CONCLUSÃO ═══ */}
-      <Secao id="s-conclusao" num={6} titulo="Momento e Projecao" />
+      {/* ═══ O QUE ESPERAR DE 2025 ═══ */}
+      <Secao titulo="O Que Esperar de 2025" />
+      <Paragrafo>
+        O conjunto de indicadores permite uma leitura integrada do momento. Combinando confianca do consumidor, custo do credito e trajetoria recente do setor, chegamos a um veredicto sobre o momento de investir.
+      </Paragrafo>
       <div className="p-6" style={{ ...CARD, borderLeft: `4px solid ${semaforoCor}` }}>
         <div className="flex items-center gap-4 mb-5">
           <div className="flex items-center justify-center" style={{ width: 60, height: 60, borderRadius: "50%", background: semaforoBg }}>
@@ -410,11 +336,9 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
           </div>
         )}
 
-        <div className="flex items-center gap-2 mb-5">
-          <span className="font-semibold px-3 py-1" style={{ fontSize: 12, background: "#FFF0ED", color: P, borderRadius: 6 }}>
-            Setor superou projecao em {superouCount} dos ultimos {totalProj} anos
-          </span>
-        </div>
+        <span className="inline-block font-semibold px-3 py-1 mb-5" style={{ fontSize: 12, background: "#FFF0ED", color: P, borderRadius: 6 }}>
+          Setor superou projecao em {superouCount} dos ultimos {totalProj} anos
+        </span>
 
         <div className="font-bold" style={{ fontSize: 18, color: "#1A1A1A", lineHeight: 1.6 }}>
           {semaforo === "favoravel"

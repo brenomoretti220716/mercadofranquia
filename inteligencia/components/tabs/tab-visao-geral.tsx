@@ -5,6 +5,7 @@ import {
   LineChart, Line, Legend,
 } from "recharts"
 import { InsightBox, h, GraficoRodape } from "@/components/insight-box"
+import { TermometroTrimestral } from "@/components/termometro-trimestral"
 
 const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" } as const
 const P = "#E8421A"
@@ -60,9 +61,10 @@ interface Props {
   desemprego: any
   consumidorPainel: any
   projecoes: any[]
+  trimestrais: any[]
 }
 
-export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestral, pibEstado, selic, ipca, desemprego, consumidorPainel, projecoes, serieEmpregos }: Props) {
+export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestral, pibEstado, selic, ipca, desemprego, consumidorPainel, projecoes, serieEmpregos, trimestrais }: Props) {
   // ── Dados processados ─────────────────────────────────────────────
   const totais = anual.filter((r: any) => r.segmento === "Total").sort((a: any, b: any) => a.periodo.localeCompare(b.periodo))
 
@@ -131,8 +133,32 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
   const totalProj = (projecoes || []).length
   const totalFatSeg = segmentos.reduce((acc: number, s: any) => acc + s.valor_mm, 0)
 
+  // Índice de oportunidade por estado
+  const POP_EST: Record<string, number> = {
+    "São Paulo": 44.4, "Rio de Janeiro": 16.1, "Minas Gerais": 20.5, "Paraná": 11.4,
+    "Santa Catarina": 7.6, "Rio Grande do Sul": 10.9, "Bahia": 14.1, "Goiás": 7.2,
+    "Pernambuco": 9.1, "Distrito Federal": 2.8, "Mato Grosso": 3.7, "Mato Grosso do Sul": 2.8,
+    "Ceará": 9.2, "Espírito Santo": 4.1, "Maranhão": 7.1,
+  }
+  const estadosComIndice = top10.map((d: any) => {
+    const pop = POP_EST[d.estado] || 5.0
+    const pibPc = d.valor_bi / pop // bi / mi = R$ mil per capita
+    return { ...d, pop, pibPc: +pibPc.toFixed(1) }
+  })
+  const maxPibPc = Math.max(...estadosComIndice.map((e: any) => e.pibPc), 1)
+  const estadosComScore = estadosComIndice.map((e: any) => ({
+    ...e,
+    score: Math.round((e.pibPc / maxPibPc) * 10),
+    badge: e.pibPc > maxPibPc * 0.7 ? "Alto" : e.pibPc > maxPibPc * 0.4 ? "Em expansao" : "Emergente",
+    badgeCor: e.pibPc > maxPibPc * 0.7 ? P : e.pibPc > maxPibPc * 0.4 ? AZUL : "#FF9800",
+    badgeBg: e.pibPc > maxPibPc * 0.7 ? "#FFF0ED" : e.pibPc > maxPibPc * 0.4 ? "#EBF5FF" : "#FFF8E1",
+  }))
+
   return (
     <>
+      {/* ═══ TERMÔMETRO TRIMESTRAL ═══ */}
+      <TermometroTrimestral trimestrais={trimestrais} />
+
       {/* ═══ O FRANCHISING EM NÚMEROS ═══ */}
       <Secao titulo="O Franchising Brasileiro em Numeros" />
       <Paragrafo>
@@ -295,6 +321,50 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
               <span className="shrink-0 font-semibold" style={{ fontSize: 12, color: "#1A1A1A", width: 80, textAlign: "right" }}>R$ {d.valor_bi.toFixed(0)} bi</span>
             </div>
           ))}
+        </div>
+        <GraficoRodape fonte="IBGE — Contas Regionais" periodo={anoRecente || "ultimo"} />
+      </div>
+
+      {/* ═══ ÍNDICE DE OPORTUNIDADE ═══ */}
+      <Secao titulo="Onde Ha Mais Oportunidade?" />
+      <Paragrafo>
+        Estados com alto PIB per capita e menor saturacao de redes representam os maiores mercados em aberto. O indice combina poder de compra local com potencial de expansao.
+      </Paragrafo>
+      <InsightBox insights={[
+        `${estadosComScore.filter((e: any) => e.badge === "Em expansao").map((e: any) => e.estado).join(", ")} apresentam PIB per capita crescente com menor saturacao — oportunidade para expansao de redes`,
+      ]} />
+      <div className="p-6 mb-2" style={CARD}>
+        <div className="font-semibold mb-4" style={{ color: "#999", fontSize: 13 }}>Indice de Oportunidade por Estado</div>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid #E5E5E5" }}>
+              <th className="text-left font-bold py-2 px-2" style={{ color: "#666" }}>Estado</th>
+              <th className="text-right font-bold py-2 px-2" style={{ color: "#666" }}>PIB (R$ bi)</th>
+              <th className="text-right font-bold py-2 px-2" style={{ color: "#666" }}>PIB per capita</th>
+              <th className="text-center font-bold py-2 px-2" style={{ color: "#666" }}>Indice</th>
+              <th className="text-center font-bold py-2 px-2" style={{ color: "#666" }}>Classificacao</th>
+            </tr>
+          </thead>
+          <tbody>
+            {estadosComScore.map((e: any) => (
+              <tr key={e.estado} style={{ borderBottom: "1px solid #F5F5F5" }}>
+                <td className="py-2 px-2 font-medium" style={{ color: "#1A1A1A" }}>{e.estado}</td>
+                <td className="text-right py-2 px-2" style={{ color: "#666" }}>R$ {e.valor_bi.toFixed(0)} bi</td>
+                <td className="text-right py-2 px-2" style={{ color: "#666" }}>R$ {e.pibPc} mil</td>
+                <td className="text-center py-2 px-2">
+                  <span className="font-bold" style={{ color: P }}>{e.score}/10</span>
+                </td>
+                <td className="text-center py-2 px-2">
+                  <span className="font-semibold px-2 py-0.5" style={{ fontSize: 11, background: e.badgeBg, color: e.badgeCor, borderRadius: 4 }}>
+                    {e.badge}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="mt-3" style={{ fontSize: 10, color: "#CCC" }}>
+          Indice calculado com base em PIB per capita estadual (IBGE {anoRecente}). Dados de unidades por estado serao incorporados em versao futura.
         </div>
         <GraficoRodape fonte="IBGE — Contas Regionais" periodo={anoRecente || "ultimo"} />
       </div>

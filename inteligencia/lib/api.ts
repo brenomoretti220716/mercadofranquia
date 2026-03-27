@@ -55,6 +55,12 @@ export async function getConsumidorPainel(anos = 3) {
   return res.json()
 }
 
+export async function getInvestimentoPorSegmento() {
+  const res = await fetch(`${API_URL}/api/franquias/investimento-por-segmento`)
+  if (!res.ok) throw new Error('Erro ao buscar investimento por segmento')
+  return res.json()
+}
+
 export async function getEmpregoCaged(setor?: string, meses = 36) {
   const params = new URLSearchParams({ meses: String(meses) })
   if (setor) params.set('setor', setor)

@@ -497,6 +497,40 @@ def get_sync_status():
 
 # ── FRANQUIAS ─────────────────────────────────────────────────────────────
 
+@app.get("/api/franquias/investimento-por-segmento")
+def get_investimento_por_segmento():
+    """Retorna min, mediana e max de investimento por segmento."""
+    conn = get_conn()
+    rows = conn.execute("""
+        SELECT segmento,
+               COUNT(*) as total,
+               MIN(investimento_min) as inv_min,
+               MAX(investimento_max) as inv_max
+        FROM franquias
+        WHERE segmento IS NOT NULL AND investimento_min IS NOT NULL
+        GROUP BY segmento
+        ORDER BY total DESC
+    """).fetchall()
+    result = []
+    for r in rows:
+        # Calcular mediana via query separada
+        mediana_rows = conn.execute(
+            "SELECT investimento_min FROM franquias WHERE segmento=? AND investimento_min IS NOT NULL ORDER BY investimento_min",
+            (r["segmento"],)
+        ).fetchall()
+        vals = [v[0] for v in mediana_rows]
+        mediana = vals[len(vals) // 2] if vals else 0
+        result.append({
+            "segmento": r["segmento"],
+            "total_franquias": r["total"],
+            "min": r["inv_min"],
+            "mediana": mediana,
+            "max": r["inv_max"],
+        })
+    conn.close()
+    return result
+
+
 @app.get("/api/franquias/segmentos")
 def get_franquias_segmentos():
     """Lista segmentos disponíveis com contagem."""

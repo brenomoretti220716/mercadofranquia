@@ -38,6 +38,8 @@ export interface AllData {
   cagedServicos: any
   consumidorPainel: any
   empregosAbf: number | null
+  investSegmento: any[]
+  trimestrais: any[]
 }
 
 export default function NavTabs({ data }: { data: AllData }) {
@@ -78,6 +80,7 @@ export default function NavTabs({ data }: { data: AllData }) {
           desemprego={data.desemprego}
           consumidorPainel={data.consumidorPainel}
           projecoes={data.projecoes}
+          trimestrais={data.trimestrais}
         />
       )}
       {activeTab === "segmentos" && (
@@ -85,6 +88,7 @@ export default function NavTabs({ data }: { data: AllData }) {
           segmentos={data.segmentos}
           segmentosAnual={data.segmentosAnual}
           pmcData={data.pmcData}
+          investSegmento={data.investSegmento}
         />
       )}
       {activeTab === "cenario" && (

@@ -79,7 +79,7 @@ export default function RelatoriosPage() {
           <p className="text-sm mt-1" style={{ color: "#888" }}>Gestao de relatorios ABF importados</p>
         </div>
         <a
-          href="/admin/upload"
+          href="/backoffice/upload"
           className="px-4 py-2 rounded-lg text-sm font-medium text-white"
           style={{ background: "#1D9E75" }}
         >

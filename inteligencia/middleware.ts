@@ -4,14 +4,14 @@ import { NextRequest, NextResponse } from "next/server"
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  if (pathname === "/admin/login") {
+  if (pathname === "/backoffice/login") {
     return NextResponse.next()
   }
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || "mercadofranquia-dev-secret-change-in-prod" })
 
   if (!token) {
-    const loginUrl = new URL("/admin/login", req.url)
+    const loginUrl = new URL("/backoffice/login", req.url)
     return NextResponse.redirect(loginUrl)
   }
 
@@ -19,5 +19,5 @@ export default async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/backoffice/:path*"],
+  matcher: ["/backoffice/:path*"],
 }

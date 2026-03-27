@@ -24,7 +24,7 @@ const handler = NextAuth({
     }),
   ],
   session: { strategy: "jwt" },
-  pages: { signIn: "/admin/login" },
+  pages: { signIn: "/backoffice/login" },
   secret: process.env.NEXTAUTH_SECRET || "mercadofranquia-dev-secret-change-in-prod",
 })
 

@@ -5,14 +5,14 @@ import { signOut } from "next-auth/react"
 import { SessionProvider } from "next-auth/react"
 
 const NAV_ITEMS = [
-  { href: "/admin", label: "Dashboard Admin", icon: "◉" },
-  { href: "/admin/dashboard-dados", label: "Dashboard Dados", icon: "◈" },
-  { href: "/admin/relatorios", label: "Relatorios ABF", icon: "◫" },
-  { href: "/admin/upload", label: "Upload PDF", icon: "↑" },
-  { href: "/admin/franquias", label: "Franquias", icon: "▣" },
-  { href: "/admin/fontes", label: "Fontes", icon: "◎" },
-  { href: "/admin/logs", label: "Logs", icon: "≡" },
-  { href: "/admin/auditoria", label: "Auditoria", icon: "✓" },
+  { href: "/backoffice", label: "Dashboard Admin", icon: "◉" },
+  { href: "/backoffice/dashboard-dados", label: "Dashboard Dados", icon: "◈" },
+  { href: "/backoffice/relatorios", label: "Relatorios ABF", icon: "◫" },
+  { href: "/backoffice/upload", label: "Upload PDF", icon: "↑" },
+  { href: "/backoffice/franquias", label: "Franquias", icon: "▣" },
+  { href: "/backoffice/fontes", label: "Fontes", icon: "◎" },
+  { href: "/backoffice/logs", label: "Logs", icon: "≡" },
+  { href: "/backoffice/auditoria", label: "Auditoria", icon: "✓" },
 ]
 
 function Sidebar() {
@@ -54,7 +54,7 @@ function Sidebar() {
       </div>
 
       <button
-        onClick={() => signOut({ callbackUrl: "/admin/login" })}
+        onClick={() => signOut({ callbackUrl: "/backoffice/login" })}
         className="flex items-center gap-2 px-3 py-2 text-xs font-medium transition-all"
         style={{ color: "#555", borderRadius: 8 }}
       >
@@ -66,7 +66,7 @@ function Sidebar() {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isLogin = pathname === "/admin/login"
+  const isLogin = pathname === "/backoffice/login"
 
   if (isLogin) {
     return <>{children}</>

@@ -54,7 +54,7 @@ export default function FontesPage() {
       try {
         const [syncRes, statsRes] = await Promise.all([
           fetch(`${API_URL}/api/sync/status`).then((r) => r.ok ? r.json() : []),
-          fetch(`${API_URL}/api/admin/stats`).then((r) => r.ok ? r.json() : []),
+          fetch(`${API_URL}/api/backoffice/stats`).then((r) => r.ok ? r.json() : []),
         ])
         setSyncData(syncRes)
         setStats(statsRes)

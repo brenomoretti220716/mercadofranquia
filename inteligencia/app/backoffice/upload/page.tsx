@@ -296,7 +296,7 @@ export default function UploadPage() {
                 Dados salvos com sucesso — {dados.periodo}
               </div>
               <div className="text-xs mt-1" style={{ color: "#1D9E75" }}>
-                <a href="/admin/relatorios" className="underline">Ver relatorios</a>
+                <a href="/backoffice/relatorios" className="underline">Ver relatorios</a>
               </div>
             </div>
           )}

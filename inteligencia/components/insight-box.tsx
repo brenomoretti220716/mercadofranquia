@@ -33,3 +33,13 @@ export function InsightBox({ insights }: InsightBoxProps) {
 export function h(valor: string | number): string {
   return `<strong style="color:#E8421A">${valor}</strong>`
 }
+
+/** Rodapé padrão de gráfico com fonte, período e nota */
+export function GraficoRodape({ fonte, periodo, nota }: { fonte: string; periodo: string; nota?: string }) {
+  return (
+    <div className="flex items-center justify-between mt-3" style={{ fontSize: 10, color: "#BBB" }}>
+      <span>Fonte: {fonte} · Periodo: {periodo} · Atualizado: Mar/2026</span>
+      {nota && <span>{nota}</span>}
+    </div>
+  )
+}

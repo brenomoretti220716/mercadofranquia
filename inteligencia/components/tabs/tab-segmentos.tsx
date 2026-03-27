@@ -5,7 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
   BarChart, Bar, Cell,
 } from "recharts"
-import { InsightBox, h } from "@/components/insight-box"
+import { InsightBox, h, GraficoRodape } from "@/components/insight-box"
 
 const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 const CORES: Record<string, string> = {
@@ -329,9 +329,10 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
             ))}
           </LineChart>
         </ResponsiveContainer>
-        <div className="text-[10px] mt-2 text-center" style={{ color: "#CCC" }}>
+        <div className="text-[10px] mt-1 text-center" style={{ color: "#CCC" }}>
           Clique na legenda para mostrar/esconder · * 2025 = acumulado 12 meses ate 3T2025
         </div>
+        <GraficoRodape fonte="ABF" periodo="2018-2025*" nota="R$ bilhoes correntes" />
       </div>
 
       {/* Ranking barras horizontais */}

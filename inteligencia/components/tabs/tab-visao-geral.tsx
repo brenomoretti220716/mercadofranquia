@@ -5,7 +5,7 @@ import {
   LineChart, Line, Legend,
 } from "recharts"
 import { Card, CardContent } from "@/components/ui/card"
-import { InsightBox, h } from "@/components/insight-box"
+import { InsightBox, h, GraficoRodape } from "@/components/insight-box"
 
 const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 const COR_PRIMARIA = "#E8421A"
@@ -127,10 +127,9 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
       ]} />
       <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
         <div className="p-6" style={CARD}>
-          <div className="flex items-center justify-between mb-4">
-          <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>Faturamento anual — R$ bilhoes</div>
-          <span style={{ fontSize: 10, color: "#BBB" }}>Fonte: ABF 2014-2025</span>
-        </div>
+          <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>
+            Faturamento anual — {primeiro?.periodo}-{serieAnual[serieAnual.length - 1]?.periodo} — R$ bilhoes
+          </div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={serieAnual} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F0F0F0" />
@@ -142,6 +141,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          <GraficoRodape fonte="ABF" periodo={`${primeiro?.periodo}-${serieAnual[serieAnual.length - 1]?.periodo}`} nota="R$ bilhoes correntes" />
         </div>
         <div className="p-6" style={CARD}>
           <div className="text-[11px] uppercase tracking-wider font-semibold mb-3" style={{ color: "#999" }}>Top segmentos</div>
@@ -166,7 +166,9 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
 
       <SectionTitle>Empregos Diretos</SectionTitle>
       <div className="p-6 mb-4" style={CARD}>
-        <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>Evolucao de empregos diretos — milhoes</div>
+        <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>
+          Evolucao de empregos diretos — {serieEmpregos[0]?.ano}-{serieEmpregos[serieEmpregos.length - 1]?.ano} — milhoes
+        </div>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={serieEmpregos} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F0F0F0" />
@@ -176,6 +178,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
             <Line type="monotone" dataKey="empregos_mi" stroke={COR_PRIMARIA} strokeWidth={2.5} dot={{ r: 4, fill: COR_PRIMARIA, stroke: "#fff", strokeWidth: 2 }} />
           </LineChart>
         </ResponsiveContainer>
+        <GraficoRodape fonte="ABF" periodo={`${serieEmpregos[0]?.ano}-${serieEmpregos[serieEmpregos.length - 1]?.ano}`} />
       </div>
 
       <SectionTitle>Franchising vs PIB</SectionTitle>
@@ -183,9 +186,8 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
         `Franchising cresceu em media ${h(mediaSuperacao + "pp")} acima do PIB — em ${h(anosAcimaDosPib)} dos ultimos ${h(totalAnosComparativo)} anos superou a economia`,
       ]} />
       <div className="p-6 mb-4" style={CARD}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>Crescimento anual — Franchising ABF vs PIB Brasil (%)</div>
-          <span style={{ fontSize: 10, color: "#BBB" }}>Fonte: ABF + BCB</span>
+        <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>
+          Crescimento anual — Franchising ABF vs PIB Brasil — 2015-2024 (%)
         </div>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={serieFatVsPib} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
@@ -198,6 +200,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
             <Line type="monotone" dataKey="pib" stroke={COR_CINZA} strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3, fill: COR_CINZA, stroke: "#fff", strokeWidth: 2 }} connectNulls />
           </LineChart>
         </ResponsiveContainer>
+        <GraficoRodape fonte="ABF + BCB" periodo="2015-2024" />
       </div>
 
       <SectionTitle>PIB por Estado</SectionTitle>
@@ -223,6 +226,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
             </div>
           ))}
         </div>
+        <GraficoRodape fonte="IBGE — Contas Regionais" periodo={anoRecente || "ultimo disponivel"} />
       </div>
     </>
   )

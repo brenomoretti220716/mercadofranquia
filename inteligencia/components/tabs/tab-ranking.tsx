@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { InsightBox, h } from "@/components/insight-box"
+import { InsightBox, h, GraficoRodape } from "@/components/insight-box"
 
 const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 const COR_PRIMARIA = "#E8421A"
@@ -127,6 +127,7 @@ export function TabRanking({ ranking, segmentos }: Props) {
             </TableBody>
           </Table>
         </div>
+        <GraficoRodape fonte="ABF + RankFranchise" periodo={String(anoAtivo)} />
       </div>
     </>
   )

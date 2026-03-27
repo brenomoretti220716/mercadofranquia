@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { InsightBox, h } from "@/components/insight-box"
+import { InsightBox, h, GraficoRodape } from "@/components/insight-box"
 
 const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 const COR_PRIMARIA = "#E8421A"
@@ -93,6 +93,7 @@ export function TabProjecoes({ projecoes }: { projecoes: Projecao[] }) {
             })}
           </TableBody>
         </Table>
+        <GraficoRodape fonte="ABF" periodo={`${sorted[0]?.ano_referencia}-${sorted[sorted.length - 1]?.ano_referencia}`} />
       </div>
     </>
   )

@@ -9,9 +9,11 @@ const BG_CONTENT = "#f4f3ef"
 const COR_PRIMARIA = "#1D9E75"
 
 const NAV_ITEMS = [
-  { href: "/admin", label: "Dashboard", icon: "◉" },
-  { href: "/admin/relatorios", label: "Relatorios", icon: "◫" },
+  { href: "/admin", label: "Dashboard Admin", icon: "◉" },
+  { href: "/admin/dashboard-dados", label: "Dashboard Dados", icon: "◈" },
+  { href: "/admin/relatorios", label: "Relatorios ABF", icon: "◫" },
   { href: "/admin/upload", label: "Upload PDF", icon: "↑" },
+  { href: "/admin/franquias", label: "Franquias", icon: "▣" },
   { href: "/admin/fontes", label: "Fontes", icon: "◎" },
   { href: "/admin/logs", label: "Logs", icon: "≡" },
   { href: "/admin/auditoria", label: "Auditoria", icon: "✓" },

@@ -1,7 +1,7 @@
 import { getFaturamentoAnual, getSegmentos, getIndicadores, getProjecoes, getRanking, getMacroBCB, getMacroIBGE, getVarejoPMC, getEmpregoCaged, getConsumidorPainel } from "@/lib/api"
 import NavTabs from "@/components/nav-tabs"
 
-export default async function InteligenciaPage() {
+export default async function DashboardDadosPage() {
   const [anual, segmentos, indicadores, projecoes, ranking, selic, ipca, dolar, desemprego, pibTrimestral, pibEstado, pmcData, cagedComercio, cagedServicos, consumidorPainel] = await Promise.all([
     getFaturamentoAnual(),
     getSegmentos("anual"),
@@ -20,7 +20,6 @@ export default async function InteligenciaPage() {
     getConsumidorPainel(3),
   ])
 
-  // Pré-processar dados comuns
   const totais = anual
     .filter((r: any) => r.segmento === "Total")
     .sort((a: any, b: any) => a.periodo.localeCompare(b.periodo))
@@ -65,49 +64,47 @@ export default async function InteligenciaPage() {
   ]
 
   return (
-    <main className="min-h-screen p-8" style={{ background: "#f4f3ef" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className="mb-6">
-          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "#1D9E75" }}>
-            Franquias Intelligence
-          </p>
-          <h1 className="text-3xl font-medium" style={{ color: "#1a1a18" }}>
-            Mercado de Franchising Brasileiro
-          </h1>
-          <p className="text-sm mt-1" style={{ color: "#888" }}>
-            Dados ABF 2014-2025 · BCB · IBGE · CAGED · Atualizado Mar/2026
-          </p>
-        </div>
-
-        <NavTabs
-          data={{
-            kpis,
-            serieAnual,
-            segmentos: segs,
-            segmentosAnual: segAnual,
-            projecoes,
-            ranking,
-            serieEmpregos,
-            indicadores,
-            anual,
-            selic,
-            ipca,
-            dolar,
-            desemprego,
-            pibTrimestral,
-            pibEstado,
-            pmcData,
-            cagedComercio,
-            cagedServicos,
-            consumidorPainel,
-            empregosAbf: emprego?.empregos_diretos ?? null,
-          }}
-        />
-
-        <p className="text-center mt-8" style={{ fontSize: 11, color: "#ccc" }}>
-          Fonte: ABF · BCB · IBGE/PMC · CAGED · FGV · mercadofranquia.com.br/inteligencia
+    <>
+      <div className="mb-6">
+        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "#1D9E75" }}>
+          Franquias Intelligence
+        </p>
+        <h1 className="text-2xl font-medium" style={{ color: "#1a1a18" }}>
+          Mercado de Franchising Brasileiro
+        </h1>
+        <p className="text-sm mt-1" style={{ color: "#888" }}>
+          Dados ABF 2014-2025 · BCB · IBGE · CAGED · Atualizado Mar/2026
         </p>
       </div>
-    </main>
+
+      <NavTabs
+        data={{
+          kpis,
+          serieAnual,
+          segmentos: segs,
+          segmentosAnual: segAnual,
+          projecoes,
+          ranking,
+          serieEmpregos,
+          indicadores,
+          anual,
+          selic,
+          ipca,
+          dolar,
+          desemprego,
+          pibTrimestral,
+          pibEstado,
+          pmcData,
+          cagedComercio,
+          cagedServicos,
+          consumidorPainel,
+          empregosAbf: emprego?.empregos_diretos ?? null,
+        }}
+      />
+
+      <p className="text-center mt-8" style={{ fontSize: 11, color: "#ccc" }}>
+        Fonte: ABF · BCB · IBGE/PMC · CAGED · FGV · mercadofranquia.com.br
+      </p>
+    </>
   )
 }

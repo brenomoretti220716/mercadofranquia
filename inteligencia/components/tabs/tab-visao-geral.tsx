@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect, useRef } from "react"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid,
   LineChart, Line, Legend,
@@ -24,20 +25,27 @@ const ESTADO_REGIAO: Record<string, string> = {
   "Pará": "Norte", "Amazonas": "Norte", "Rondônia": "Norte", "Tocantins": "Norte", "Acre": "Norte", "Amapá": "Norte", "Roraima": "Norte",
 }
 
-const ETAPAS = [
-  { num: 1, icon: "📊", titulo: "O Setor", desc: "dimensao e impacto do franchising no Brasil" },
-  { num: 2, icon: "📈", titulo: "Trajetoria", desc: "11 anos de crescimento historico" },
-  { num: 3, icon: "⚡", titulo: "vs Economia", desc: "comparativo com o PIB brasileiro" },
-  { num: 4, icon: "🏦", titulo: "Ambiente Macro", desc: "indicadores economicos que afetam o setor" },
-  { num: 5, icon: "🗺️", titulo: "Potencial Regional", desc: "onde ha mais oportunidade no Brasil" },
-  { num: 6, icon: "🎯", titulo: "Conclusao", desc: "momento atual e projecao para 2025" },
+const CORES_SEG: Record<string, string> = {
+  "Saúde, Beleza e Bem-Estar": "#9C27B0", "Alimentação - FS": "#F7A072", "Serviços e Outros Negócios": "#455A64",
+  "Moda": "#E91E63", "Alimentação - CD": "#F4845F", "Casa e Construção": "#2196F3",
+  "Educação": "#00BCD4", "Hotelaria e Turismo": "#4CAF50", "Serviços Automotivos": "#607D8B",
+  "Comunicação/TI": "#7C4DFF", "Entretenimento e Lazer": "#FF9800", "Limpeza e Conservação": "#795548",
+}
+
+const NAV_ITEMS = [
+  { id: "s-setor", label: "Tamanho do Setor" },
+  { id: "s-crescimento", label: "Crescimento" },
+  { id: "s-economia", label: "vs Economia" },
+  { id: "s-cenario", label: "Cenario" },
+  { id: "s-regiao", label: "Por Regiao" },
+  { id: "s-conclusao", label: "Conclusao" },
 ]
 
-function Secao({ num, titulo, id }: { num: number; titulo: string; id?: string }) {
+function Secao({ id, num, titulo }: { id: string; num: number; titulo: string }) {
   return (
-    <div id={id} className="flex items-center gap-3 mt-10 mb-5">
-      <span className="inline-flex items-center justify-center shrink-0 text-xs font-bold text-white" style={{ width: 26, height: 26, borderRadius: "50%", background: P }}>{num}</span>
-      <h3 className="text-sm font-bold uppercase tracking-wide" style={{ color: "#1A1A1A" }}>{titulo}</h3>
+    <div id={id} className="flex items-center gap-3 mt-10 mb-5 scroll-mt-16">
+      <span className="inline-flex items-center justify-center shrink-0 font-bold text-white" style={{ width: 28, height: 28, borderRadius: "50%", background: P, fontSize: 13 }}>{num}</span>
+      <h3 className="font-semibold uppercase tracking-wide" style={{ color: "#1A1A1A", fontSize: 18 }}>{titulo}</h3>
       <div className="flex-1 h-px" style={{ background: "#E5E5E5" }} />
     </div>
   )
@@ -62,6 +70,29 @@ interface Props {
 }
 
 export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anual, pibTrimestral, pibEstado, selic, ipca, desemprego, consumidorPainel, projecoes }: Props) {
+  const [activeNav, setActiveNav] = useState("s-setor")
+  const [selectedSeg, setSelectedSeg] = useState<string | null>(null)
+
+  // IntersectionObserver for nav pills
+  useEffect(() => {
+    const ids = NAV_ITEMS.map((n) => n.id)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveNav(entry.target.id)
+          }
+        }
+      },
+      { rootMargin: "-100px 0px -60% 0px", threshold: 0 }
+    )
+    for (const id of ids) {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    }
+    return () => observer.disconnect()
+  }, [])
+
   // ── Dados processados ─────────────────────────────────────────────
   const totais = anual.filter((r: any) => r.segmento === "Total").sort((a: any, b: any) => a.periodo.localeCompare(b.periodo))
 
@@ -91,7 +122,6 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   const maxPib = top10[0]?.valor_bi ?? 1
   const regioes = [...new Set(top10.map((d: any) => d.regiao))] as string[]
 
-  // Macro KPIs
   const selicDados = selic?.dados || []
   const selicAtual = selicDados.length > 0 ? selicAnualizada(selicDados[selicDados.length - 1]?.valor) : 0
   const ipcaDados = ipca?.dados || []
@@ -100,8 +130,6 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   const desempAtual = desempDados.length > 0 ? desempDados[desempDados.length - 1]?.valor : 0
   const iccDados = consumidorPainel?.icc?.dados || []
   const iccAtual = iccDados.length > 0 ? iccDados[iccDados.length - 1]?.valor : 0
-
-  // Consumidor
   const endivDados = consumidorPainel?.endividamento?.dados || []
   const endivAtual = endivDados.length > 0 ? endivDados[endivDados.length - 1]?.valor : 0
   const massaDados = consumidorPainel?.massa_salarial?.dados || []
@@ -109,11 +137,10 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   const massaBi = massaAtual / 1_000_000
   const massaVar12m = massaDados.length > 12 ? +(((massaAtual / massaDados[massaDados.length - 13]?.valor) - 1) * 100).toFixed(1) : 0
 
-  // Insights
   const primeiro = serieAnual[0]
   const ultimoAnual = serieAnual.filter((s) => !s.parcial).pop() || serieAnual[serieAnual.length - 1]
   const crescTotal = primeiro && ultimoAnual ? Math.round(((ultimoAnual.valor_bi / primeiro.valor_bi) - 1) * 100) : 0
-  const var2020 = (() => { const q = serieAnual.find((s) => s.periodo === "2020"), p = serieAnual.find((s) => s.periodo === "2019"); return q && p ? +((q.valor_bi / p.valor_bi - 1) * 100).toFixed(1) : 0 })()
+  const var2020 = (() => { const q = serieAnual.find((s) => s.periodo === "2020"), pp = serieAnual.find((s) => s.periodo === "2019"); return q && pp ? +((q.valor_bi / pp.valor_bi - 1) * 100).toFixed(1) : 0 })()
   const anosAcimaPib = serieFatVsPib.filter((s) => s.abf != null && s.pib != null && s.abf! > s.pib!).length
   const totalComp = serieFatVsPib.filter((s) => s.abf != null && s.pib != null).length
   const mediaSup = totalComp > 0 ? +(serieFatVsPib.filter((s) => s.abf != null && s.pib != null).reduce((a, s) => a + (s.abf! - s.pib!), 0) / totalComp).toFixed(1) : 0
@@ -121,7 +148,6 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   const totalPib10 = top10.reduce((a: number, d: any) => a + d.valor_bi, 0)
   const top3PibPct = totalPib10 > 0 ? Math.round((top3Pib / totalPib10) * 100) : 0
 
-  // Semáforo
   const crescRecente = serieAnual.length >= 2 ? +((serieAnual[serieAnual.length - 1].valor_bi / serieAnual[serieAnual.length - 2].valor_bi - 1) * 100).toFixed(1) : 0
   const semaforoVerde = iccAtual > 110 && selicAtual < 12 && crescRecente > 8
   const semaforoVermelho = iccAtual < 90 || selicAtual > 14
@@ -133,57 +159,115 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   const proj2025 = (projecoes || []).find((p: any) => p.ano_referencia === 2025)
   const superouCount = (projecoes || []).filter((p: any) => p.fat_realizado_pct > p.fat_var_max_pct).length
   const totalProj = (projecoes || []).length
+  const totalFatSeg = segmentos.reduce((acc: number, s: any) => acc + s.valor_mm, 0)
+
+  // Segmento selecionado
+  const segDetalhe = selectedSeg ? segmentos.find((s: any) => s.segmento === selectedSeg) : null
+  const segPosicao = selectedSeg ? segmentos.findIndex((s: any) => s.segmento === selectedSeg) + 1 : 0
+  const segPct = segDetalhe && totalFatSeg > 0 ? +((segDetalhe.valor_mm / totalFatSeg) * 100).toFixed(1) : 0
 
   return (
     <>
-      {/* ═══ INTRODUÇÃO ═══ */}
-      <div className="p-5 mb-2" style={{ background: "#FFF8F6", borderRadius: 12, border: "1px solid #FFE4DB" }}>
-        <div className="text-sm font-bold mb-3" style={{ color: "#1A1A1A" }}>Como ler este painel</div>
-        <div className="text-xs mb-3" style={{ color: "#666" }}>
-          Este painel conta a historia completa do franchising brasileiro em 6 etapas, do tamanho do setor ate a conclusao sobre o momento atual de investimento.
-        </div>
-        <div className="grid grid-cols-6 gap-2">
-          {ETAPAS.map((e) => (
-            <div key={e.num} className="flex flex-col items-center text-center gap-1">
-              <span className="inline-flex items-center justify-center text-[10px] font-bold text-white" style={{ width: 22, height: 22, borderRadius: "50%", background: P }}>{e.num}</span>
-              <span className="text-[10px] font-semibold" style={{ color: "#1A1A1A" }}>{e.titulo}</span>
-              <span className="text-[9px]" style={{ color: "#999" }}>{e.desc}</span>
+      {/* ═══ BARRA NARRATIVA ═══ */}
+      <div className="sticky top-0 z-10 py-2 px-1 mb-2 -mx-2 overflow-x-auto" style={{ background: "#F8F8F8" }}>
+        <div className="flex items-center gap-1">
+          {NAV_ITEMS.map((item, i) => (
+            <div key={item.id} className="flex items-center shrink-0">
+              <a
+                href={`#${item.id}`}
+                className="px-3 py-1.5 font-semibold whitespace-nowrap transition-all"
+                style={{
+                  fontSize: 12,
+                  background: activeNav === item.id ? P : "#F0F0F0",
+                  color: activeNav === item.id ? "#fff" : "#666",
+                  borderRadius: 6,
+                }}
+              >
+                {item.label}
+              </a>
+              {i < NAV_ITEMS.length - 1 && <span className="mx-0.5" style={{ color: "#DDD", fontSize: 10 }}>→</span>}
             </div>
           ))}
         </div>
-        <div className="text-right mt-3">
-          <a href="#conclusao" className="text-xs font-semibold" style={{ color: P }}>Ir para conclusao ↓</a>
-        </div>
       </div>
 
-      {/* ═══ SEÇÃO 1 — O SETOR EM NÚMEROS ═══ */}
-      <Secao num={1} titulo="O Setor em Numeros" />
-      <div className="grid grid-cols-4 gap-4 mb-2">
+      {/* ═══ SEÇÃO 1 — TAMANHO DO SETOR ═══ */}
+      <Secao id="s-setor" num={1} titulo="Tamanho do Setor" />
+      <div className="grid grid-cols-4 gap-4 mb-4">
         {kpis.map((k, i) => (
           <div key={i} className="p-5" style={CARD}>
-            <div className="text-[11px] uppercase tracking-wider font-semibold mb-2" style={{ color: "#999" }}>{k.label}</div>
-            <div className="text-3xl font-bold" style={{ color: "#1A1A1A" }}>{k.valor}</div>
-            <div className="text-xs mt-1 font-medium" style={{ color: i === 0 ? P : "#999" }}>{k.sub}</div>
+            <div className="uppercase tracking-wider font-semibold mb-2" style={{ color: "#999", fontSize: 12 }}>{k.label}</div>
+            <div className="font-bold" style={{ color: i === 0 ? P : "#1A1A1A", fontSize: 36 }}>{k.valor}</div>
+            <div className="mt-1 font-medium" style={{ color: i === 0 ? P : "#999", fontSize: 12 }}>{k.sub}</div>
           </div>
         ))}
       </div>
 
+      {/* Pills de segmento */}
+      <div className="overflow-x-auto mb-3 -mx-1 px-1">
+        <div className="flex gap-1.5">
+          {segmentos.map((s: any) => {
+            const cor = CORES_SEG[s.segmento] || "#999"
+            const active = selectedSeg === s.segmento
+            return (
+              <button
+                key={s.segmento}
+                onClick={() => setSelectedSeg(active ? null : s.segmento)}
+                className="px-3 py-1 font-semibold whitespace-nowrap shrink-0 transition-all"
+                style={{
+                  fontSize: 11,
+                  borderRadius: 20,
+                  background: active ? cor : "#F5F5F5",
+                  color: active ? "#fff" : "#666",
+                  border: `1px solid ${active ? cor : "#E5E5E5"}`,
+                }}
+              >
+                {s.segmento}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Mini card do segmento selecionado */}
+      {selectedSeg && segDetalhe && (
+        <div className="p-4 mb-4 flex items-center justify-between" style={{ ...CARD, borderLeft: `3px solid ${CORES_SEG[selectedSeg] || P}` }}>
+          <div className="flex items-center gap-6">
+            <div>
+              <div style={{ fontSize: 12, color: "#999" }}>Faturamento</div>
+              <div className="font-bold" style={{ fontSize: 22, color: "#1A1A1A" }}>R$ {(segDetalhe.valor_mm / 1000).toFixed(1)} bi</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#999" }}>Participacao</div>
+              <div className="font-bold" style={{ fontSize: 22, color: "#1A1A1A" }}>{segPct}%</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#999" }}>Posicao</div>
+              <div className="font-bold" style={{ fontSize: 22, color: P }}>#{segPosicao}</div>
+            </div>
+          </div>
+          <span className="font-semibold cursor-pointer" style={{ fontSize: 12, color: P }}>
+            Ver analise completa →
+          </span>
+        </div>
+      )}
+
       {/* ═══ SEÇÃO 2 — CRESCIMENTO ═══ */}
-      <Secao num={2} titulo="11 Anos de Crescimento Consistente" />
+      <Secao id="s-crescimento" num={2} titulo="11 Anos de Crescimento" />
       <InsightBox insights={[
         `O setor cresceu ${h(crescTotal + "%")} em 11 anos, de R$ ${h(primeiro?.valor_bi)} bi (${primeiro?.periodo}) para R$ ${h(ultimoAnual?.valor_bi)} bi (${ultimoAnual?.periodo})`,
         `Unico ano de queda: 2020 (${h(var2020 + "%")}) — recuperacao completa em 2021`,
       ]} />
       <div className="p-6" style={CARD}>
-        <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>
+        <div className="font-semibold mb-4" style={{ color: "#999", fontSize: 13 }}>
           Faturamento anual — {primeiro?.periodo}-{serieAnual[serieAnual.length - 1]?.periodo} — R$ bilhoes
         </div>
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={260}>
           <BarChart data={serieAnual} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F0F0F0" />
-            <XAxis dataKey="periodo" tick={{ fontSize: 10, fill: "#BBB" }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "#BBB" }} tickLine={false} axisLine={false} />
-            <Tooltip formatter={(value) => [`R$ ${value} bi`, "Faturamento"]} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #eee" }} />
+            <XAxis dataKey="periodo" tick={{ fontSize: 12, fill: "#999" }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 12, fill: "#BBB" }} tickLine={false} axisLine={false} />
+            <Tooltip formatter={(value) => [`R$ ${value} bi`, "Faturamento"]} contentStyle={{ fontSize: 13, borderRadius: 8, border: "1px solid #eee" }} />
             <Bar dataKey="valor_bi" radius={[4, 4, 0, 0]} maxBarSize={40}>
               {serieAnual.map((e) => <Cell key={e.periodo} fill={e.periodo === "2020" ? COVID : e.parcial ? LIGHT : P} opacity={e.parcial ? 0.6 : 1} />)}
             </Bar>
@@ -193,21 +277,21 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
       </div>
 
       {/* ═══ SEÇÃO 3 — VS ECONOMIA ═══ */}
-      <Secao num={3} titulo="Franchising Supera a Economia" />
+      <Secao id="s-economia" num={3} titulo="Franchising Supera a Economia" />
       <InsightBox insights={[
         `Franchising cresceu em media ${h(mediaSup + "pp")} acima do PIB — em ${h(anosAcimaPib)} dos ultimos ${h(totalComp)} anos superou a economia`,
       ]} />
       <div className="p-6" style={CARD}>
-        <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>
+        <div className="font-semibold mb-4" style={{ color: "#999", fontSize: 13 }}>
           Crescimento anual — Franchising ABF vs PIB Brasil — 2015-2024 (%)
         </div>
-        <ResponsiveContainer width="100%" height={260}>
+        <ResponsiveContainer width="100%" height={280}>
           <LineChart data={serieFatVsPib} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F0F0F0" />
-            <XAxis dataKey="ano" tick={{ fontSize: 11, fill: "#BBB" }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "#BBB" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} />
-            <Tooltip formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name === "abf" ? "Franchising ABF" : "PIB Brasil"]} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #eee" }} />
-            <Legend formatter={(v) => (v === "abf" ? "Franchising ABF" : "PIB Brasil")} wrapperStyle={{ fontSize: 11 }} />
+            <XAxis dataKey="ano" tick={{ fontSize: 12, fill: "#999" }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 12, fill: "#BBB" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} />
+            <Tooltip formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name === "abf" ? "Franchising ABF" : "PIB Brasil"]} contentStyle={{ fontSize: 13, borderRadius: 8, border: "1px solid #eee" }} />
+            <Legend formatter={(v) => (v === "abf" ? "Franchising ABF" : "PIB Brasil")} wrapperStyle={{ fontSize: 12 }} />
             <Line type="monotone" dataKey="abf" stroke={P} strokeWidth={2.5} dot={{ r: 4, fill: P, stroke: "#fff", strokeWidth: 2 }} />
             <Line type="monotone" dataKey="pib" stroke={AZUL} strokeWidth={1.8} strokeDasharray="5 5" dot={{ r: 3, fill: AZUL, stroke: "#fff", strokeWidth: 2 }} connectNulls />
           </LineChart>
@@ -215,8 +299,8 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
         <GraficoRodape fonte="ABF + BCB" periodo="2015-2024" />
       </div>
 
-      {/* ═══ SEÇÃO 4 — AMBIENTE MACRO ═══ */}
-      <Secao num={4} titulo="O Ambiente Macro Atual" />
+      {/* ═══ SEÇÃO 4 — CENÁRIO ═══ */}
+      <Secao id="s-cenario" num={4} titulo="O Cenario Atual" />
       <InsightBox insights={[
         `Com ICC em ${h(iccAtual.toFixed(0))}, Selic em ${h(selicAtual.toFixed(1) + "%")}, IPCA em ${h(ipca12m + "%")} e desemprego em ${h(desempAtual.toFixed(1) + "%")}, o ambiente e ${h(semaforoLabel.toLowerCase())} para abertura de franquias`,
       ]} />
@@ -228,44 +312,44 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
           { label: "Desemprego", valor: desempAtual.toFixed(1) + "%", badge: desempAtual < 7 ? "Baixo" : desempAtual > 10 ? "Alto" : "Moderado", bc: desempAtual < 7 ? "#2E7D32" : desempAtual > 10 ? COVID : "#F59E0B", bb: desempAtual < 7 ? "#E8F5E9" : desempAtual > 10 ? "#FFEBEE" : "#FFF8E1" },
         ].map((k) => (
           <div key={k.label} className="p-4" style={CARD}>
-            <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>{k.label}</div>
-            <div className="text-2xl font-bold mb-2" style={{ color: "#1A1A1A" }}>{k.valor}</div>
-            <span className="text-[10px] font-semibold px-2 py-0.5" style={{ background: k.bb, color: k.bc, borderRadius: 4 }}>{k.badge}</span>
+            <div className="uppercase tracking-wider font-semibold mb-1" style={{ color: "#999", fontSize: 11 }}>{k.label}</div>
+            <div className="font-bold mb-2" style={{ color: "#1A1A1A", fontSize: 28 }}>{k.valor}</div>
+            <span className="font-semibold px-2 py-0.5" style={{ fontSize: 11, background: k.bb, color: k.bc, borderRadius: 4 }}>{k.badge}</span>
           </div>
         ))}
       </div>
 
-      {/* Consumidor e Emprego */}
+      {/* Consumidor */}
       <InsightBox insights={[
-        `Com massa salarial de R$ ${h(massaBi.toFixed(0) + " bi")} (${massaVar12m > 0 ? "+" : ""}${h(massaVar12m + "%")} em 12m) e endividamento em ${h(endivAtual.toFixed(1) + "%")} da renda, o consumidor tem ${endivAtual < 45 ? "margem" : "pouca margem"} para investir em franquias`,
+        `Massa salarial de R$ ${h(massaBi.toFixed(0) + " bi")} (${massaVar12m > 0 ? "+" : ""}${h(massaVar12m + "%")} em 12m) e endividamento em ${h(endivAtual.toFixed(1) + "%")} da renda`,
       ]} />
       <div className="grid grid-cols-4 gap-4">
         {[
           { label: "Endividamento", valor: endivAtual.toFixed(1) + "%", sub: "da renda familiar", cor: endivAtual > 45 ? COVID : "#2E7D32" },
-          { label: "Massa salarial real", valor: `R$ ${massaBi.toFixed(0)} bi`, sub: massaVar12m > 0 ? `+${massaVar12m}% em 12m` : `${massaVar12m}% em 12m`, cor: massaVar12m > 0 ? "#2E7D32" : COVID },
+          { label: "Massa salarial real", valor: `R$ ${massaBi.toFixed(0)} bi`, sub: `${massaVar12m > 0 ? "+" : ""}${massaVar12m}% em 12m`, cor: massaVar12m > 0 ? "#2E7D32" : COVID },
           { label: "Empregos diretos", valor: serieEmpregos[serieEmpregos.length - 1]?.empregos_mi ? serieEmpregos[serieEmpregos.length - 1].empregos_mi + " mi" : "—", sub: "no franchising", cor: "#999" },
-          { label: "ICC tendencia", valor: iccAtual > (iccDados.length > 3 ? iccDados[iccDados.length - 4]?.valor : 0) ? "Em alta" : "Estavel", sub: `${iccAtual.toFixed(0)} pontos`, cor: iccAtual > 100 ? "#2E7D32" : "#F59E0B" },
+          { label: "ICC tendencia", valor: iccAtual > (iccDados.length > 3 ? iccDados[iccDados.length - 4]?.valor : 0) ? "Em alta" : "Estavel", sub: `${iccAtual.toFixed(0)} pts`, cor: iccAtual > 100 ? "#2E7D32" : "#F59E0B" },
         ].map((k) => (
           <div key={k.label} className="p-4" style={CARD}>
-            <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>{k.label}</div>
-            <div className="text-xl font-bold mb-1" style={{ color: "#1A1A1A" }}>{k.valor}</div>
-            <div className="text-[10px] font-medium" style={{ color: k.cor }}>{k.sub}</div>
+            <div className="uppercase tracking-wider font-semibold mb-1" style={{ color: "#999", fontSize: 11 }}>{k.label}</div>
+            <div className="font-bold mb-1" style={{ color: "#1A1A1A", fontSize: 22 }}>{k.valor}</div>
+            <div className="font-medium" style={{ color: k.cor, fontSize: 11 }}>{k.sub}</div>
           </div>
         ))}
       </div>
       <GraficoRodape fonte="BCB + FGV" periodo="ultimo disponivel" />
 
-      {/* ═══ SEÇÃO 5 — POTENCIAL REGIONAL ═══ */}
-      <Secao num={5} titulo="Potencial por Regiao" />
+      {/* ═══ SEÇÃO 5 — REGIONAL ═══ */}
+      <Secao id="s-regiao" num={5} titulo="Potencial por Regiao" />
       <InsightBox insights={[
-        `${top10[0]?.estado}, ${top10[1]?.estado} e ${top10[2]?.estado} concentram ${h(top3PibPct + "%")} do PIB do top 10 — maior potencial de mercado para franquias`,
+        `${top10[0]?.estado}, ${top10[1]?.estado} e ${top10[2]?.estado} concentram ${h(top3PibPct + "%")} do PIB do top 10`,
       ]} />
       <div className="p-6" style={CARD}>
         <div className="flex items-center justify-between mb-5">
-          <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>PIB por estado — Top 10 ({anoRecente})</div>
+          <div className="font-semibold" style={{ color: "#999", fontSize: 13 }}>PIB por estado — Top 10 ({anoRecente})</div>
           <div className="flex gap-3">
             {regioes.map((r) => (
-              <span key={r} className="flex items-center gap-1" style={{ fontSize: 10, color: "#888" }}>
+              <span key={r} className="flex items-center gap-1" style={{ fontSize: 11, color: "#888" }}>
                 <span className="inline-block" style={{ width: 8, height: 8, borderRadius: 2, background: CORES_REGIAO[r] || "#999" }} />{r}
               </span>
             ))}
@@ -274,11 +358,11 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
         <div className="flex flex-col gap-2.5">
           {top10.map((d: any, i: number) => (
             <div key={d.estado} className="flex items-center gap-3">
-              <span className="text-right shrink-0" style={{ fontSize: 11, color: i < 3 ? "#1A1A1A" : "#888", fontWeight: i < 3 ? 600 : 400, width: 130 }}>{d.estado}</span>
+              <span className="text-right shrink-0" style={{ fontSize: 12, color: i < 3 ? "#1A1A1A" : "#888", fontWeight: i < 3 ? 600 : 400, width: 130 }}>{d.estado}</span>
               <div className="flex-1 rounded-full" style={{ height: 10, background: "#F0F0F0" }}>
                 <div className="rounded-full" style={{ height: "100%", width: `${(d.valor_bi / maxPib) * 100}%`, background: CORES_REGIAO[d.regiao] || "#999" }} />
               </div>
-              <span className="shrink-0 font-semibold" style={{ fontSize: 11, color: "#1A1A1A", width: 75, textAlign: "right" }}>R$ {d.valor_bi.toFixed(0)} bi</span>
+              <span className="shrink-0 font-semibold" style={{ fontSize: 12, color: "#1A1A1A", width: 80, textAlign: "right" }}>R$ {d.valor_bi.toFixed(0)} bi</span>
             </div>
           ))}
         </div>
@@ -286,23 +370,19 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
       </div>
 
       {/* ═══ SEÇÃO 6 — CONCLUSÃO ═══ */}
-      <Secao num={6} titulo="Momento e Projecao" id="conclusao" />
+      <Secao id="s-conclusao" num={6} titulo="Momento e Projecao" />
       <div className="p-6" style={{ ...CARD, borderLeft: `4px solid ${semaforoCor}` }}>
-        {/* Semáforo grande */}
         <div className="flex items-center gap-4 mb-5">
-          <div className="flex items-center justify-center" style={{ width: 56, height: 56, borderRadius: "50%", background: semaforoBg }}>
-            <span style={{ width: 24, height: 24, borderRadius: "50%", background: semaforoCor, display: "block" }} />
+          <div className="flex items-center justify-center" style={{ width: 60, height: 60, borderRadius: "50%", background: semaforoBg }}>
+            <span style={{ width: 26, height: 26, borderRadius: "50%", background: semaforoCor, display: "block" }} />
           </div>
           <div>
-            <div className="font-bold" style={{ fontSize: 18, color: semaforoCor }}>
-              Momento {semaforoLabel}
-            </div>
-            <div className="text-xs" style={{ color: "#999" }}>Baseado em ICC, Selic e crescimento recente</div>
+            <div className="font-bold" style={{ fontSize: 22, color: semaforoCor }}>Momento {semaforoLabel}</div>
+            <div style={{ fontSize: 12, color: "#999" }}>Baseado em ICC, Selic e crescimento recente</div>
           </div>
         </div>
 
-        {/* Checklist */}
-        <div className="flex flex-col gap-2 mb-5">
+        <div className="flex flex-col gap-2.5 mb-5">
           {[
             { check: true, text: `Crescimento historico: ${crescTotal}% em 11 anos consecutivos` },
             { check: anosAcimaPib > totalComp / 2, text: `vs PIB: superou em ${anosAcimaPib} dos ultimos ${totalComp} anos` },
@@ -310,35 +390,33 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
             { check: desempAtual < 8, text: `Desemprego: ${desempAtual.toFixed(1)}% (${desempAtual < 7 ? "minima historica" : "moderado"})` },
             { check: proj2025 ? proj2025.fat_realizado_pct > proj2025.fat_var_max_pct : false, text: proj2025 ? `Projecao 2025: ABF projeta +${proj2025.fat_var_min_pct}% a +${proj2025.fat_var_max_pct}%, realizado parcial +${proj2025.fat_realizado_pct}%` : "Sem projecao 2025" },
           ].map((item, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span style={{ color: item.check ? "#2E7D32" : "#F59E0B", fontSize: 14 }}>{item.check ? "✅" : "⚠️"}</span>
-              <span className="text-xs" style={{ color: "#1A1A1A" }}>{item.text}</span>
+            <div key={i} className="flex items-center gap-2.5">
+              <span style={{ fontSize: 16 }}>{item.check ? "✅" : "⚠️"}</span>
+              <span style={{ fontSize: 14, color: "#1A1A1A" }}>{item.text}</span>
             </div>
           ))}
         </div>
 
-        {/* Projeção 2025 */}
         {proj2025 && (
           <div className="p-4 mb-4" style={{ background: "#F8F8F8", borderRadius: 8 }}>
-            <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>Projecao ABF 2025</div>
+            <div className="uppercase tracking-wider font-semibold mb-1" style={{ fontSize: 11, color: "#999" }}>Projecao ABF 2025</div>
             <div className="flex items-center gap-3">
-              <span className="text-sm" style={{ color: "#999" }}>Projetado: +{proj2025.fat_var_min_pct}% a +{proj2025.fat_var_max_pct}%</span>
-              <span className="text-sm font-bold" style={{ color: P }}>Realizado parcial: +{proj2025.fat_realizado_pct}%</span>
+              <span style={{ fontSize: 14, color: "#999" }}>Projetado: +{proj2025.fat_var_min_pct}% a +{proj2025.fat_var_max_pct}%</span>
+              <span className="font-bold" style={{ fontSize: 14, color: P }}>Realizado parcial: +{proj2025.fat_realizado_pct}%</span>
               {proj2025.fat_realizado_pct > proj2025.fat_var_max_pct && (
-                <span className="text-[10px] font-semibold px-2 py-0.5" style={{ background: "#E8F5E9", color: "#2E7D32", borderRadius: 4 }}>Superou</span>
+                <span className="font-semibold px-2 py-0.5" style={{ fontSize: 11, background: "#E8F5E9", color: "#2E7D32", borderRadius: 4 }}>Superou</span>
               )}
             </div>
           </div>
         )}
 
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-[10px] font-semibold px-2 py-0.5" style={{ background: "#FFF0ED", color: P, borderRadius: 4 }}>
+        <div className="flex items-center gap-2 mb-5">
+          <span className="font-semibold px-3 py-1" style={{ fontSize: 12, background: "#FFF0ED", color: P, borderRadius: 6 }}>
             Setor superou projecao em {superouCount} dos ultimos {totalProj} anos
           </span>
         </div>
 
-        {/* Conclusão em destaque */}
-        <div className="font-bold" style={{ fontSize: 18, color: "#1A1A1A", lineHeight: 1.5 }}>
+        <div className="font-bold" style={{ fontSize: 18, color: "#1A1A1A", lineHeight: 1.6 }}>
           {semaforo === "favoravel"
             ? "O conjunto de indicadores aponta para um momento positivo para investir em franquias — confianca alta, credito acessivel e setor em crescimento."
             : semaforo === "cautela"

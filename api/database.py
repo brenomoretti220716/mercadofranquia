@@ -157,6 +157,7 @@ def init_db():
         tempo_retorno_meses INTEGER,
         num_estados     INTEGER,
         ano_fundacao    INTEGER,
+        imagem_og       TEXT,
         fonte           TEXT DEFAULT 'ABF/PortalFranchising',
         url_fonte       TEXT,
         data_coleta     TEXT,

@@ -24,9 +24,18 @@ const ESTADO_REGIAO: Record<string, string> = {
   "Pará": "Norte", "Amazonas": "Norte", "Rondônia": "Norte", "Tocantins": "Norte", "Acre": "Norte", "Amapá": "Norte", "Roraima": "Norte",
 }
 
-function Secao({ num, titulo }: { num: number; titulo: string }) {
+const ETAPAS = [
+  { num: 1, icon: "📊", titulo: "O Setor", desc: "dimensao e impacto do franchising no Brasil" },
+  { num: 2, icon: "📈", titulo: "Trajetoria", desc: "11 anos de crescimento historico" },
+  { num: 3, icon: "⚡", titulo: "vs Economia", desc: "comparativo com o PIB brasileiro" },
+  { num: 4, icon: "🏦", titulo: "Ambiente Macro", desc: "indicadores economicos que afetam o setor" },
+  { num: 5, icon: "🗺️", titulo: "Potencial Regional", desc: "onde ha mais oportunidade no Brasil" },
+  { num: 6, icon: "🎯", titulo: "Conclusao", desc: "momento atual e projecao para 2025" },
+]
+
+function Secao({ num, titulo, id }: { num: number; titulo: string; id?: string }) {
   return (
-    <div className="flex items-center gap-3 mt-10 mb-5">
+    <div id={id} className="flex items-center gap-3 mt-10 mb-5">
       <span className="inline-flex items-center justify-center shrink-0 text-xs font-bold text-white" style={{ width: 26, height: 26, borderRadius: "50%", background: P }}>{num}</span>
       <h3 className="text-sm font-bold uppercase tracking-wide" style={{ color: "#1A1A1A" }}>{titulo}</h3>
       <div className="flex-1 h-px" style={{ background: "#E5E5E5" }} />
@@ -56,7 +65,6 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   // ── Dados processados ─────────────────────────────────────────────
   const totais = anual.filter((r: any) => r.segmento === "Total").sort((a: any, b: any) => a.periodo.localeCompare(b.periodo))
 
-  // Franchising vs PIB
   const pibPorAno = new Map<string, number[]>()
   for (const d of (pibTrimestral?.dados || [])) {
     const ano = d.data.slice(0, 4)
@@ -75,7 +83,6 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
     serieFatVsPib.push({ ano, abf: +crescAbf.toFixed(1), pib: crescPib })
   }
 
-  // PIB por estado
   const pibDados = pibEstado?.dados || []
   const anosDisp = [...new Set(pibDados.map((d: any) => d.data))].sort()
   const anoRecente = anosDisp[anosDisp.length - 1] as string
@@ -94,7 +101,15 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   const iccDados = consumidorPainel?.icc?.dados || []
   const iccAtual = iccDados.length > 0 ? iccDados[iccDados.length - 1]?.valor : 0
 
-  // Cálculos de insight
+  // Consumidor
+  const endivDados = consumidorPainel?.endividamento?.dados || []
+  const endivAtual = endivDados.length > 0 ? endivDados[endivDados.length - 1]?.valor : 0
+  const massaDados = consumidorPainel?.massa_salarial?.dados || []
+  const massaAtual = massaDados.length > 0 ? massaDados[massaDados.length - 1]?.valor : 0
+  const massaBi = massaAtual / 1_000_000
+  const massaVar12m = massaDados.length > 12 ? +(((massaAtual / massaDados[massaDados.length - 13]?.valor) - 1) * 100).toFixed(1) : 0
+
+  // Insights
   const primeiro = serieAnual[0]
   const ultimoAnual = serieAnual.filter((s) => !s.parcial).pop() || serieAnual[serieAnual.length - 1]
   const crescTotal = primeiro && ultimoAnual ? Math.round(((ultimoAnual.valor_bi / primeiro.valor_bi) - 1) * 100) : 0
@@ -113,14 +128,34 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   const semaforo = semaforoVerde ? "favoravel" : semaforoVermelho ? "cautela" : "neutro"
   const semaforoCor = semaforo === "favoravel" ? "#2E7D32" : semaforo === "cautela" ? COVID : "#F59E0B"
   const semaforoBg = semaforo === "favoravel" ? "#E8F5E9" : semaforo === "cautela" ? "#FFEBEE" : "#FFF8E1"
+  const semaforoLabel = semaforo === "favoravel" ? "Favoravel" : semaforo === "cautela" ? "de Cautela" : "Neutro"
 
-  // Projeção 2025
   const proj2025 = (projecoes || []).find((p: any) => p.ano_referencia === 2025)
   const superouCount = (projecoes || []).filter((p: any) => p.fat_realizado_pct > p.fat_var_max_pct).length
   const totalProj = (projecoes || []).length
 
   return (
     <>
+      {/* ═══ INTRODUÇÃO ═══ */}
+      <div className="p-5 mb-2" style={{ background: "#FFF8F6", borderRadius: 12, border: "1px solid #FFE4DB" }}>
+        <div className="text-sm font-bold mb-3" style={{ color: "#1A1A1A" }}>Como ler este painel</div>
+        <div className="text-xs mb-3" style={{ color: "#666" }}>
+          Este painel conta a historia completa do franchising brasileiro em 6 etapas, do tamanho do setor ate a conclusao sobre o momento atual de investimento.
+        </div>
+        <div className="grid grid-cols-6 gap-2">
+          {ETAPAS.map((e) => (
+            <div key={e.num} className="flex flex-col items-center text-center gap-1">
+              <span className="inline-flex items-center justify-center text-[10px] font-bold text-white" style={{ width: 22, height: 22, borderRadius: "50%", background: P }}>{e.num}</span>
+              <span className="text-[10px] font-semibold" style={{ color: "#1A1A1A" }}>{e.titulo}</span>
+              <span className="text-[9px]" style={{ color: "#999" }}>{e.desc}</span>
+            </div>
+          ))}
+        </div>
+        <div className="text-right mt-3">
+          <a href="#conclusao" className="text-xs font-semibold" style={{ color: P }}>Ir para conclusao ↓</a>
+        </div>
+      </div>
+
       {/* ═══ SEÇÃO 1 — O SETOR EM NÚMEROS ═══ */}
       <Secao num={1} titulo="O Setor em Numeros" />
       <div className="grid grid-cols-4 gap-4 mb-2">
@@ -133,7 +168,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
         ))}
       </div>
 
-      {/* ═══ SEÇÃO 2 — CRESCIMENTO CONSISTENTE ═══ */}
+      {/* ═══ SEÇÃO 2 — CRESCIMENTO ═══ */}
       <Secao num={2} titulo="11 Anos de Crescimento Consistente" />
       <InsightBox insights={[
         `O setor cresceu ${h(crescTotal + "%")} em 11 anos, de R$ ${h(primeiro?.valor_bi)} bi (${primeiro?.periodo}) para R$ ${h(ultimoAnual?.valor_bi)} bi (${ultimoAnual?.periodo})`,
@@ -157,7 +192,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
         <GraficoRodape fonte="ABF" periodo={`${primeiro?.periodo}-${serieAnual[serieAnual.length - 1]?.periodo}`} nota="R$ bilhoes correntes · * parcial" />
       </div>
 
-      {/* ═══ SEÇÃO 3 — FRANCHISING SUPERA A ECONOMIA ═══ */}
+      {/* ═══ SEÇÃO 3 — VS ECONOMIA ═══ */}
       <Secao num={3} titulo="Franchising Supera a Economia" />
       <InsightBox insights={[
         `Franchising cresceu em media ${h(mediaSup + "pp")} acima do PIB — em ${h(anosAcimaPib)} dos ultimos ${h(totalComp)} anos superou a economia`,
@@ -180,28 +215,47 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
         <GraficoRodape fonte="ABF + BCB" periodo="2015-2024" />
       </div>
 
-      {/* ═══ SEÇÃO 4 — AMBIENTE MACRO ATUAL ═══ */}
+      {/* ═══ SEÇÃO 4 — AMBIENTE MACRO ═══ */}
       <Secao num={4} titulo="O Ambiente Macro Atual" />
       <InsightBox insights={[
-        `Com ICC em ${h(iccAtual.toFixed(0))}, Selic em ${h(selicAtual.toFixed(1) + "%")}, IPCA em ${h(ipca12m + "%")} e desemprego em ${h(desempAtual.toFixed(1) + "%")}, o ambiente e ${h(semaforo === "favoravel" ? "favoravel" : semaforo === "cautela" ? "de cautela" : "neutro")} para abertura de franquias`,
+        `Com ICC em ${h(iccAtual.toFixed(0))}, Selic em ${h(selicAtual.toFixed(1) + "%")}, IPCA em ${h(ipca12m + "%")} e desemprego em ${h(desempAtual.toFixed(1) + "%")}, o ambiente e ${h(semaforoLabel.toLowerCase())} para abertura de franquias`,
       ]} />
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-4 mb-4">
         {[
-          { label: "ICC (Confianca)", valor: iccAtual.toFixed(0), badge: iccAtual > 110 ? "Favoravel" : iccAtual < 90 ? "Baixo" : "Neutro", badgeCor: iccAtual > 110 ? "#2E7D32" : iccAtual < 90 ? COVID : "#F59E0B", badgeBg: iccAtual > 110 ? "#E8F5E9" : iccAtual < 90 ? "#FFEBEE" : "#FFF8E1" },
-          { label: "Selic % a.a.", valor: selicAtual.toFixed(1) + "%", badge: selicAtual < 10 ? "Credito barato" : selicAtual > 13 ? "Credito caro" : "Moderada", badgeCor: selicAtual < 10 ? "#2E7D32" : selicAtual > 13 ? COVID : "#F59E0B", badgeBg: selicAtual < 10 ? "#E8F5E9" : selicAtual > 13 ? "#FFEBEE" : "#FFF8E1" },
-          { label: "IPCA 12 meses", valor: ipca12m + "%", badge: ipca12m > 4.5 ? "Acima da meta" : ipca12m < 3 ? "Abaixo da meta" : "Na meta", badgeCor: ipca12m > 4.5 ? COVID : ipca12m < 3 ? AZUL : "#2E7D32", badgeBg: ipca12m > 4.5 ? "#FFEBEE" : "#E8F5E9" },
-          { label: "Desemprego", valor: desempAtual.toFixed(1) + "%", badge: desempAtual < 7 ? "Baixo" : desempAtual > 10 ? "Alto" : "Moderado", badgeCor: desempAtual < 7 ? "#2E7D32" : desempAtual > 10 ? COVID : "#F59E0B", badgeBg: desempAtual < 7 ? "#E8F5E9" : desempAtual > 10 ? "#FFEBEE" : "#FFF8E1" },
+          { label: "ICC (Confianca)", valor: iccAtual.toFixed(0), badge: iccAtual > 110 ? "Favoravel" : iccAtual < 90 ? "Baixo" : "Neutro", bc: iccAtual > 110 ? "#2E7D32" : iccAtual < 90 ? COVID : "#F59E0B", bb: iccAtual > 110 ? "#E8F5E9" : iccAtual < 90 ? "#FFEBEE" : "#FFF8E1" },
+          { label: "Selic % a.a.", valor: selicAtual.toFixed(1) + "%", badge: selicAtual < 10 ? "Credito barato" : selicAtual > 13 ? "Credito caro" : "Moderada", bc: selicAtual < 10 ? "#2E7D32" : selicAtual > 13 ? COVID : "#F59E0B", bb: selicAtual < 10 ? "#E8F5E9" : selicAtual > 13 ? "#FFEBEE" : "#FFF8E1" },
+          { label: "IPCA 12 meses", valor: ipca12m + "%", badge: ipca12m > 4.5 ? "Acima da meta" : ipca12m < 3 ? "Abaixo" : "Na meta", bc: ipca12m > 4.5 ? COVID : "#2E7D32", bb: ipca12m > 4.5 ? "#FFEBEE" : "#E8F5E9" },
+          { label: "Desemprego", valor: desempAtual.toFixed(1) + "%", badge: desempAtual < 7 ? "Baixo" : desempAtual > 10 ? "Alto" : "Moderado", bc: desempAtual < 7 ? "#2E7D32" : desempAtual > 10 ? COVID : "#F59E0B", bb: desempAtual < 7 ? "#E8F5E9" : desempAtual > 10 ? "#FFEBEE" : "#FFF8E1" },
         ].map((k) => (
           <div key={k.label} className="p-4" style={CARD}>
             <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>{k.label}</div>
             <div className="text-2xl font-bold mb-2" style={{ color: "#1A1A1A" }}>{k.valor}</div>
-            <span className="text-[10px] font-semibold px-2 py-0.5" style={{ background: k.badgeBg, color: k.badgeCor, borderRadius: 4 }}>{k.badge}</span>
+            <span className="text-[10px] font-semibold px-2 py-0.5" style={{ background: k.bb, color: k.bc, borderRadius: 4 }}>{k.badge}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Consumidor e Emprego */}
+      <InsightBox insights={[
+        `Com massa salarial de R$ ${h(massaBi.toFixed(0) + " bi")} (${massaVar12m > 0 ? "+" : ""}${h(massaVar12m + "%")} em 12m) e endividamento em ${h(endivAtual.toFixed(1) + "%")} da renda, o consumidor tem ${endivAtual < 45 ? "margem" : "pouca margem"} para investir em franquias`,
+      ]} />
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: "Endividamento", valor: endivAtual.toFixed(1) + "%", sub: "da renda familiar", cor: endivAtual > 45 ? COVID : "#2E7D32" },
+          { label: "Massa salarial real", valor: `R$ ${massaBi.toFixed(0)} bi`, sub: massaVar12m > 0 ? `+${massaVar12m}% em 12m` : `${massaVar12m}% em 12m`, cor: massaVar12m > 0 ? "#2E7D32" : COVID },
+          { label: "Empregos diretos", valor: serieEmpregos[serieEmpregos.length - 1]?.empregos_mi ? serieEmpregos[serieEmpregos.length - 1].empregos_mi + " mi" : "—", sub: "no franchising", cor: "#999" },
+          { label: "ICC tendencia", valor: iccAtual > (iccDados.length > 3 ? iccDados[iccDados.length - 4]?.valor : 0) ? "Em alta" : "Estavel", sub: `${iccAtual.toFixed(0)} pontos`, cor: iccAtual > 100 ? "#2E7D32" : "#F59E0B" },
+        ].map((k) => (
+          <div key={k.label} className="p-4" style={CARD}>
+            <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>{k.label}</div>
+            <div className="text-xl font-bold mb-1" style={{ color: "#1A1A1A" }}>{k.valor}</div>
+            <div className="text-[10px] font-medium" style={{ color: k.cor }}>{k.sub}</div>
           </div>
         ))}
       </div>
       <GraficoRodape fonte="BCB + FGV" periodo="ultimo disponivel" />
 
-      {/* ═══ SEÇÃO 5 — POTENCIAL POR REGIÃO ═══ */}
+      {/* ═══ SEÇÃO 5 — POTENCIAL REGIONAL ═══ */}
       <Secao num={5} titulo="Potencial por Regiao" />
       <InsightBox insights={[
         `${top10[0]?.estado}, ${top10[1]?.estado} e ${top10[2]?.estado} concentram ${h(top3PibPct + "%")} do PIB do top 10 — maior potencial de mercado para franquias`,
@@ -231,35 +285,41 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
         <GraficoRodape fonte="IBGE — Contas Regionais" periodo={anoRecente || "ultimo"} />
       </div>
 
-      {/* ═══ SEÇÃO 6 — MOMENTO E PROJEÇÃO ═══ */}
-      <Secao num={6} titulo="Momento e Projecao" />
+      {/* ═══ SEÇÃO 6 — CONCLUSÃO ═══ */}
+      <Secao num={6} titulo="Momento e Projecao" id="conclusao" />
       <div className="p-6" style={{ ...CARD, borderLeft: `4px solid ${semaforoCor}` }}>
-        <div className="flex items-center gap-3 mb-4">
-          <span className="inline-block" style={{ width: 14, height: 14, borderRadius: "50%", background: semaforoCor }} />
-          <span className="text-lg font-bold" style={{ color: semaforoCor }}>
-            Momento {semaforo === "favoravel" ? "Favoravel" : semaforo === "cautela" ? "de Cautela" : "Neutro"}
-          </span>
-        </div>
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="p-3" style={{ background: semaforoBg, borderRadius: 8 }}>
-            <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: semaforoCor }}>Confianca</div>
-            <div className="text-lg font-bold" style={{ color: "#1A1A1A" }}>ICC {iccAtual.toFixed(0)}</div>
-            <div className="text-[10px]" style={{ color: "#999" }}>{iccAtual > 110 ? "Acima de 110 = favoravel" : iccAtual < 90 ? "Abaixo de 90 = cautela" : "Entre 90-110 = neutro"}</div>
+        {/* Semáforo grande */}
+        <div className="flex items-center gap-4 mb-5">
+          <div className="flex items-center justify-center" style={{ width: 56, height: 56, borderRadius: "50%", background: semaforoBg }}>
+            <span style={{ width: 24, height: 24, borderRadius: "50%", background: semaforoCor, display: "block" }} />
           </div>
-          <div className="p-3" style={{ background: semaforoBg, borderRadius: 8 }}>
-            <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: semaforoCor }}>Custo do credito</div>
-            <div className="text-lg font-bold" style={{ color: "#1A1A1A" }}>Selic {selicAtual.toFixed(1)}%</div>
-            <div className="text-[10px]" style={{ color: "#999" }}>{selicAtual < 12 ? "Abaixo de 12% = acessivel" : "Acima de 12% = encarece"}</div>
-          </div>
-          <div className="p-3" style={{ background: semaforoBg, borderRadius: 8 }}>
-            <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: semaforoCor }}>Crescimento recente</div>
-            <div className="text-lg font-bold" style={{ color: "#1A1A1A" }}>{crescRecente > 0 ? "+" : ""}{crescRecente}%</div>
-            <div className="text-[10px]" style={{ color: "#999" }}>{crescRecente > 8 ? "Acima de 8% = forte" : "Abaixo de 8% = moderado"}</div>
+          <div>
+            <div className="font-bold" style={{ fontSize: 18, color: semaforoCor }}>
+              Momento {semaforoLabel}
+            </div>
+            <div className="text-xs" style={{ color: "#999" }}>Baseado em ICC, Selic e crescimento recente</div>
           </div>
         </div>
 
+        {/* Checklist */}
+        <div className="flex flex-col gap-2 mb-5">
+          {[
+            { check: true, text: `Crescimento historico: ${crescTotal}% em 11 anos consecutivos` },
+            { check: anosAcimaPib > totalComp / 2, text: `vs PIB: superou em ${anosAcimaPib} dos ultimos ${totalComp} anos` },
+            { check: iccAtual > 100, text: `ICC: ${iccAtual.toFixed(0)} pontos (${iccAtual > 110 ? "favoravel" : iccAtual < 90 ? "desfavoravel" : "neutro"})` },
+            { check: desempAtual < 8, text: `Desemprego: ${desempAtual.toFixed(1)}% (${desempAtual < 7 ? "minima historica" : "moderado"})` },
+            { check: proj2025 ? proj2025.fat_realizado_pct > proj2025.fat_var_max_pct : false, text: proj2025 ? `Projecao 2025: ABF projeta +${proj2025.fat_var_min_pct}% a +${proj2025.fat_var_max_pct}%, realizado parcial +${proj2025.fat_realizado_pct}%` : "Sem projecao 2025" },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span style={{ color: item.check ? "#2E7D32" : "#F59E0B", fontSize: 14 }}>{item.check ? "✅" : "⚠️"}</span>
+              <span className="text-xs" style={{ color: "#1A1A1A" }}>{item.text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Projeção 2025 */}
         {proj2025 && (
-          <div className="p-4 mb-3" style={{ background: "#F8F8F8", borderRadius: 8 }}>
+          <div className="p-4 mb-4" style={{ background: "#F8F8F8", borderRadius: 8 }}>
             <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>Projecao ABF 2025</div>
             <div className="flex items-center gap-3">
               <span className="text-sm" style={{ color: "#999" }}>Projetado: +{proj2025.fat_var_min_pct}% a +{proj2025.fat_var_max_pct}%</span>
@@ -271,17 +331,18 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-4">
           <span className="text-[10px] font-semibold px-2 py-0.5" style={{ background: "#FFF0ED", color: P, borderRadius: 4 }}>
             Setor superou projecao em {superouCount} dos ultimos {totalProj} anos
           </span>
         </div>
 
-        <div className="mt-4 text-sm" style={{ color: "#666" }}>
+        {/* Conclusão em destaque */}
+        <div className="font-bold" style={{ fontSize: 18, color: "#1A1A1A", lineHeight: 1.5 }}>
           {semaforo === "favoravel"
             ? "O conjunto de indicadores aponta para um momento positivo para investir em franquias — confianca alta, credito acessivel e setor em crescimento."
             : semaforo === "cautela"
-              ? "Indicadores macro sugerem cautela — avalie bem o segmento e a regiao antes de investir. O setor como um todo continua crescendo, mas o custo de entrada esta elevado."
+              ? "Indicadores macro sugerem cautela — avalie bem o segmento e a regiao antes de investir. O setor continua crescendo, mas o custo de entrada esta elevado."
               : "Momento neutro — indicadores mistos. Oportunidades existem em segmentos especificos e regioes com maior potencial."}
         </div>
 

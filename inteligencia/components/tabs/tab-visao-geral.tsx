@@ -43,7 +43,7 @@ const NAV_ITEMS = [
 
 function Secao({ id, num, titulo }: { id: string; num: number; titulo: string }) {
   return (
-    <div id={id} className="flex items-center gap-3 mt-10 mb-5 scroll-mt-16">
+    <div id={id} className="flex items-center gap-3 mb-5" style={{ paddingTop: 80, marginTop: -32 }}>
       <span className="inline-flex items-center justify-center shrink-0 font-bold text-white" style={{ width: 28, height: 28, borderRadius: "50%", background: P, fontSize: 13 }}>{num}</span>
       <h3 className="font-semibold uppercase tracking-wide" style={{ color: "#1A1A1A", fontSize: 18 }}>{titulo}</h3>
       <div className="flex-1 h-px" style={{ background: "#E5E5E5" }} />
@@ -169,7 +169,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   return (
     <>
       {/* ═══ BARRA NARRATIVA ═══ */}
-      <div className="sticky top-0 z-10 py-2 px-1 mb-2 -mx-2 overflow-x-auto" style={{ background: "#F8F8F8" }}>
+      <div className="sticky z-10 py-2.5 px-3 mb-4 -mx-2 overflow-x-auto" style={{ top: 0, background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderRadius: 10 }}>
         <div className="flex items-center gap-1">
           {NAV_ITEMS.map((item, i) => (
             <div key={item.id} className="flex items-center shrink-0">

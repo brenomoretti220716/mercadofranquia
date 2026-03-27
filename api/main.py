@@ -30,16 +30,28 @@ def get_faturamento_anual():
     return [dict(r) for r in rows]
 
 @app.get("/api/faturamento/segmentos")
-def get_segmentos(tipo: str = "anual"):
+def get_segmentos(tipo: str = "anual", incluir_parcial: bool = True):
     conn = get_conn()
     rows = conn.execute("""
-        SELECT periodo, segmento, valor_mm
+        SELECT periodo, segmento, valor_mm, tipo_dado
         FROM faturamento
         WHERE tipo_dado = ? AND segmento != 'Total'
         ORDER BY periodo, valor_mm DESC
     """, (tipo,)).fetchall()
+    result = [dict(r) for r in rows]
+
+    # Incluir 3T2025 acumulado 12m como proxy do anual mais recente
+    if tipo == "anual" and incluir_parcial:
+        parciais = conn.execute("""
+            SELECT periodo, segmento, valor_mm, '12m_parcial' as tipo_dado
+            FROM faturamento
+            WHERE periodo = '3T2025' AND tipo_dado = '12m_acumulado' AND segmento != 'Total'
+            ORDER BY valor_mm DESC
+        """).fetchall()
+        result.extend([dict(r) for r in parciais])
+
     conn.close()
-    return [dict(r) for r in rows]
+    return result
 
 @app.get("/api/indicadores")
 def get_indicadores():

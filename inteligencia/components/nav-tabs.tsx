@@ -19,7 +19,7 @@ type TabId = (typeof TABS)[number]["id"]
 
 export interface AllData {
   kpis: { label: string; valor: string; sub: string; cor: string }[]
-  serieAnual: { periodo: string; valor_bi: number }[]
+  serieAnual: { periodo: string; valor_bi: number; parcial?: boolean }[]
   segmentos: any[]
   segmentosAnual: any[]
   projecoes: any[]

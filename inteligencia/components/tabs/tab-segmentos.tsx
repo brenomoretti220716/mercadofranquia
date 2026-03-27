@@ -47,7 +47,14 @@ function formatMes(d: string) {
 }
 
 function extrairAno(periodo: string): string {
-  return periodo.replace(/\D/g, "").slice(0, 4)
+  const ano = periodo.replace(/\D/g, "").slice(0, 4)
+  // 3T2025 (12m parcial) → "2025*"
+  if (periodo === "3T2025") return "2025*"
+  return ano
+}
+
+function extrairAnoNum(periodo: string): number {
+  return parseInt(periodo.replace(/\D/g, "").slice(0, 4))
 }
 
 const COMPARATIVOS = [
@@ -239,7 +246,7 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
           </LineChart>
         </ResponsiveContainer>
         <div className="text-[10px] mt-2 text-center" style={{ color: "#CCC" }}>
-          Clique na legenda para mostrar/esconder segmentos
+          Clique na legenda para mostrar/esconder segmentos · * 2025 refere-se ao acumulado 12 meses ate 3T2025
         </div>
       </div>
 

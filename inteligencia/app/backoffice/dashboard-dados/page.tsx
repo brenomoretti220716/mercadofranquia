@@ -28,16 +28,29 @@ export default async function DashboardDadosPage() {
   const penultimo = totais[totais.length - 2]
   const varAnual = penultimo ? (((ultimo.valor_mm / penultimo.valor_mm) - 1) * 100).toFixed(1) : null
 
-  const segs = segmentos
-    .filter((r: any) => r.periodo === "4T2023" && r.segmento !== "Total")
+  // 2025 parcial: soma dos segmentos 12m acumulado do 3T2025
+  const segs2025 = segmentos.filter((r: any) => r.periodo === "3T2025")
+  const fat2025parcial = segs2025.reduce((acc: number, r: any) => acc + r.valor_mm, 0)
+
+  // Segmentos para ranking: pegar 3T2025 (12m) se disponível, senão 4T2023
+  const segs = (segs2025.length > 0 ? segs2025 : segmentos.filter((r: any) => r.periodo === "4T2023"))
+    .filter((r: any) => r.segmento !== "Total")
     .sort((a: any, b: any) => b.valor_mm - a.valor_mm)
 
   const emprego = indicadores.filter((r: any) => r.empregos_diretos).pop()
 
-  const serieAnual = totais.map((r: any) => ({
-    periodo: r.periodo,
-    valor_bi: Math.round(r.valor_mm / 1000),
-  }))
+  const serieAnual = [
+    ...totais.map((r: any) => ({
+      periodo: r.periodo,
+      valor_bi: Math.round(r.valor_mm / 1000),
+      parcial: false,
+    })),
+    ...(fat2025parcial > 0 ? [{
+      periodo: "2025*",
+      valor_bi: Math.round(fat2025parcial / 1000),
+      parcial: true,
+    }] : []),
+  ]
 
   const serieEmpregos = indicadores
     .filter((r: any) => r.empregos_diretos)
@@ -57,10 +70,10 @@ export default async function DashboardDadosPage() {
   const segAnual = segmentos.filter((r: any) => r.segmento !== "Total")
 
   const kpis = [
-    { label: "Faturamento 2024", valor: `R$ ${(ultimo.valor_mm / 1000).toFixed(0)} bi`, sub: `+${varAnual}% vs 2023`, cor: "#E8421A" },
-    { label: "Crescimento 11 anos", valor: "+108%", sub: "R$ 127 bi para R$ 265 bi", cor: "#999" },
+    { label: "Faturamento 2025 (parcial)", valor: fat2025parcial > 0 ? `R$ ${Math.round(fat2025parcial / 1000)} bi` : `R$ ${(ultimo.valor_mm / 1000).toFixed(0)} bi`, sub: fat2025parcial > 0 ? `Acumulado 12m ate 3T2025` : `+${varAnual}% vs 2023`, cor: "#E8421A" },
+    { label: "Crescimento 11 anos", valor: "+108%", sub: "R$ 127 bi (2014) → R$ 265 bi (2024)", cor: "#999" },
     { label: "Empregos diretos", valor: emprego ? `${(emprego.empregos_diretos / 1000000).toFixed(2)} mi` : "1,80 mi", sub: `~${empregosPorUnidade} por unidade`, cor: "#999" },
-    { label: "Serie historica", valor: "11 anos", sub: `${totais.length} periodos anuais`, cor: "#999" },
+    { label: "Franquias no banco", valor: "1.387", sub: "ABF + RankFranchise", cor: "#999" },
   ]
 
   return (

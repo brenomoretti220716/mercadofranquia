@@ -39,15 +39,16 @@ function FonteBadge({ children }: { children: React.ReactNode }) {
   return <div className="text-right mt-3" style={{ fontSize: 10, color: "#BBB" }}>{children}</div>
 }
 
-function corBarra(p: string) {
+function corBarra(p: string, parcial?: boolean) {
   if (p === "2020") return COR_COVID
+  if (parcial) return "#F4845F"
   if (p === "2024") return COR_PRIMARIA
   return COR_LARANJA_LIGHT
 }
 
 interface Props {
   kpis: { label: string; valor: string; sub: string; cor: string }[]
-  serieAnual: { periodo: string; valor_bi: number }[]
+  serieAnual: { periodo: string; valor_bi: number; parcial?: boolean }[]
   segmentos: { segmento: string; valor_mm: number }[]
   serieEmpregos: { ano: string; empregos: number; empregos_mi: number }[]
   indicadores: any[]
@@ -113,7 +114,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
               <YAxis tick={{ fontSize: 10, fill: "#BBB" }} tickLine={false} axisLine={false} />
               <Tooltip formatter={(value) => [`R$ ${value} bi`, "Faturamento"]} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #eee" }} />
               <Bar dataKey="valor_bi" radius={[4, 4, 0, 0]} maxBarSize={36}>
-                {serieAnual.map((e) => <Cell key={e.periodo} fill={corBarra(e.periodo)} />)}
+                {serieAnual.map((e) => <Cell key={e.periodo} fill={corBarra(e.periodo, e.parcial)} opacity={e.parcial ? 0.6 : 1} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>

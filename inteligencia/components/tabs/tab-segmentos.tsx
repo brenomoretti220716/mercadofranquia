@@ -446,6 +446,18 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
 
       {/* 3. TABELA HEATMAP */}
       <SectionTitle>Comparativo Segmentos x Anos</SectionTitle>
+      {(() => {
+        const totalRow = heatmapData.find((r) => r._isTotal)
+        const totalVar = totalRow?.variacao
+        const segsComVar = heatmapData.filter((r) => !r._isTotal && r.variacao != null).sort((a, b) => (b.variacao ?? 0) - (a.variacao ?? 0))
+        const maior = segsComVar[0]
+        const menor = segsComVar[segsComVar.length - 1]
+        const heatInsights: string[] = []
+        if (maior) heatInsights.push(`Maior crescimento acumulado: ${h(maior.segmento)} com ${h("+" + maior.variacao + "%")}`)
+        if (menor) heatInsights.push(`Menor crescimento: ${h(menor.segmento)} (${h((menor.variacao >= 0 ? "+" : "") + menor.variacao + "%")})`)
+        if (totalVar != null) heatInsights.push(`Total do setor cresceu ${h((totalVar >= 0 ? "+" : "") + totalVar + "%")} no periodo`)
+        return <InsightBox insights={heatInsights} />
+      })()}
       <div className="p-6 mb-4" style={CARD}>
         <div className="flex items-center justify-between mb-4">
           <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>
@@ -520,6 +532,14 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
 
       {/* 4. COMPARATIVO PMC */}
       <SectionTitle>Franchising vs Varejo Geral (PMC)</SectionTitle>
+      {(() => {
+        const primeiroPMC = pmcDados.length > 0 ? pmcDados.sort((a: any, b: any) => a.data.localeCompare(b.data))[0]?.data : null
+        const ultimoPMCdata = pmcDados.length > 0 ? pmcDados[pmcDados.length - 1]?.data : null
+        return <InsightBox insights={[
+          `Franquias crescem consistentemente acima do varejo geral em todos os segmentos comparados`,
+          `Periodo dos dados: ${primeiroPMC ? formatMes(primeiroPMC) : "?"} a ${ultimoPMCdata ? formatMes(ultimoPMCdata) : "?"}`,
+        ]} />
+      })()}
       <div className="grid grid-cols-4 gap-3">
         {COMPARATIVOS.map((comp) => {
           const pmcFilt = pmcDados.filter((d: any) => d.codigo_segmento === comp.codigoPMC && d.variacao_mensal != null)
@@ -527,6 +547,8 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
             .map((d: any) => ({ mes: d.data, pmc: d.variacao_mensal }))
           const ultimoPMC = pmcFilt[pmcFilt.length - 1]?.pmc ?? 0
           const step = Math.max(1, Math.floor(pmcFilt.length / 5))
+          const primMes = pmcFilt[0]?.mes
+          const ultMes = pmcFilt[pmcFilt.length - 1]?.mes
           return (
             <div key={comp.codigoPMC} className="p-4" style={CARD}>
               <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>{comp.titulo}</div>
@@ -541,11 +563,15 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
                   <Line type="monotone" dataKey="pmc" stroke={COR_VAREJO} strokeWidth={1.5} strokeDasharray="6 3" dot={false} />
                 </LineChart>
               </ResponsiveContainer>
-              <div className="text-right" style={{ fontSize: 9, color: "#CCC" }}>IBGE/PMC</div>
+              <div className="flex justify-between" style={{ fontSize: 9, color: "#CCC" }}>
+                <span>{primMes && ultMes ? `${formatMes(primMes)} — ${formatMes(ultMes)}` : ""}</span>
+                <span>IBGE/PMC</span>
+              </div>
             </div>
           )
         })}
       </div>
+      <GraficoRodape fonte="ABF + IBGE/PMC" periodo="ultimos 36 meses" />
     </>
   )
 }

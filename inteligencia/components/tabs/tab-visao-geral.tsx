@@ -9,8 +9,8 @@ import { InsightBox, h, GraficoRodape } from "@/components/insight-box"
 
 const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 const COR_PRIMARIA = "#E8421A"
+const COR_COMPARATIVO = "#2563EB"
 const COR_LARANJA_LIGHT = "#F4845F"
-const COR_CINZA = "#999"
 const COR_COVID = "#D32F2F"
 
 const CORES_SEG = ["#E8421A", "#F4845F", "#F7A072", "#2196F3", "#7C4DFF", "#00BCD4", "#FF9800", "#4CAF50"]
@@ -197,7 +197,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
             <Tooltip formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name === "abf" ? "Franchising ABF" : "PIB Brasil"]} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #eee" }} />
             <Legend formatter={(v) => (v === "abf" ? "Franchising ABF" : "PIB Brasil")} wrapperStyle={{ fontSize: 11 }} />
             <Line type="monotone" dataKey="abf" stroke={COR_PRIMARIA} strokeWidth={2.5} dot={{ r: 4, fill: COR_PRIMARIA, stroke: "#fff", strokeWidth: 2 }} />
-            <Line type="monotone" dataKey="pib" stroke={COR_CINZA} strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3, fill: COR_CINZA, stroke: "#fff", strokeWidth: 2 }} connectNulls />
+            <Line type="monotone" dataKey="pib" stroke={COR_COMPARATIVO} strokeWidth={1.8} strokeDasharray="5 5" dot={{ r: 3, fill: COR_COMPARATIVO, stroke: "#fff", strokeWidth: 2 }} connectNulls />
           </LineChart>
         </ResponsiveContainer>
         <GraficoRodape fonte="ABF + BCB" periodo="2015-2024" />

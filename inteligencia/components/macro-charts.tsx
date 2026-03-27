@@ -27,10 +27,10 @@ interface PibEstadoItem {
 
 // ── Constantes de estilo ────────────────────────────────────────────────────
 
-const COR_PRIMARIA = "#1D9E75"
-const COR_SECUNDARIA = "#378ADD"
+const COR_PRIMARIA = "#E8421A"
+const COR_SECUNDARIA = "#2563EB"
 const COR_TERCIARIA = "#534AB7"
-const COR_LARANJA = "#D85A30"
+const COR_LARANJA = "#F4845F"
 
 const CARD_STYLE = {
   background: "#fff",
@@ -39,8 +39,8 @@ const CARD_STYLE = {
 }
 
 const CORES_REGIAO: Record<string, string> = {
-  "Sudeste": "#1D9E75",
-  "Sul": "#378ADD",
+  "Sudeste": "#E8421A",
+  "Sul": "#2563EB",
   "Nordeste": "#D85A30",
   "Centro-Oeste": "#BA7517",
   "Norte": "#534AB7",

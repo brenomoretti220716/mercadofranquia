@@ -8,8 +8,8 @@ import { Card, CardContent } from "@/components/ui/card"
 
 // ── Constantes ──────────────────────────────────────────────────────────────
 
-const COR_ICC = "#1D9E75"
-const COR_ICE = "#378ADD"
+const COR_ICC = "#E8421A"
+const COR_ICE = "#2563EB"
 const COR_ENDIV = "#D85A30"
 const COR_MASSA = "#534AB7"
 
@@ -167,7 +167,7 @@ export function PainelConsumidor({ painel }: { painel: PainelData }) {
   // Insight automático baseado no ICC
   const iccAtual = iccStats.atual
   const insightBadge = iccAtual >= 100
-    ? { texto: "Ambiente favoravel para franquias", bg: "#E1F5EE", color: "#0F6E56" }
+    ? { texto: "Ambiente favoravel para franquias", bg: "#FFF0ED", color: "#E8421A" }
     : iccAtual < 90
       ? { texto: "Momento de cautela", bg: "#FCEBEB", color: "#A32D2D" }
       : null

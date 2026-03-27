@@ -25,7 +25,7 @@ const CORES: Record<string, string> = {
 }
 const CORES_FALLBACK = ["#E8421A", "#F4845F", "#2196F3", "#7C4DFF", "#00BCD4", "#FF9800", "#4CAF50", "#795548", "#E91E63", "#9C27B0", "#607D8B", "#455A64"]
 const COR_PRIMARIA = "#E8421A"
-const COR_VAREJO = "#2196F3"
+const COR_COMPARATIVO = "#2563EB"
 const COR_COVID = "#D32F2F"
 
 const TOP5_DEFAULT = ["Saúde, Beleza e Bem-Estar", "Alimentação - FS", "Serviços e Outros Negócios", "Moda", "Alimentação - CD"]
@@ -577,7 +577,7 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
                     ABF {crescABF > 0 ? "+" : ""}{crescABF}%
                   </span>
                 )}
-                <span className="text-xs font-semibold" style={{ color: "#888" }}>
+                <span className="text-xs font-semibold" style={{ color: COR_COMPARATIVO }}>
                   Varejo {ultimoPMCval > 0 ? "+" : ""}{ultimoPMCval.toFixed(1)}%
                 </span>
                 {diff !== null && (
@@ -605,13 +605,13 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
                     labelFormatter={(l) => formatMes(String(l))}
                     contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #eee" }}
                   />
-                  <Line type="monotone" dataKey="pmc" stroke="#888" strokeWidth={1.5} dot={false} name="Varejo PMC" />
+                  <Line type="monotone" dataKey="pmc" stroke={COR_COMPARATIVO} strokeWidth={1.8} strokeDasharray="5 5" dot={false} name="Varejo PMC" />
                 </LineChart>
               </ResponsiveContainer>
 
               <div className="flex justify-between mt-1" style={{ fontSize: 9, color: "#CCC" }}>
                 <span>{primMes && ultMes ? `${formatMes(primMes)} — ${formatMes(ultMes)}` : ""}</span>
-                <span>— ABF  -- Varejo PMC</span>
+                <span><span style={{ color: COR_PRIMARIA }}>● ABF</span>  <span style={{ color: COR_COMPARATIVO }}>-- Varejo PMC</span></span>
               </div>
             </div>
           )

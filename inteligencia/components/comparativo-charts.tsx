@@ -8,10 +8,10 @@ import { Card, CardContent } from "@/components/ui/card"
 
 // ── Constantes ──────────────────────────────────────────────────────────────
 
-const COR_ABF = "#1D9E75"
-const COR_VAREJO = "#378ADD"
+const COR_ABF = "#E8421A"
+const COR_VAREJO = "#2563EB"
 const COR_COMERCIO = "#534AB7"
-const COR_SERVICOS = "#D85A30"
+const COR_SERVICOS = "#F4845F"
 
 const CARD_STYLE = {
   background: "#fff",
@@ -102,7 +102,7 @@ function MiniComparativo({
         {diff !== null && diff > 0 && (
           <div
             className="inline-block text-[10px] font-medium rounded-full px-2 py-0.5 mb-2"
-            style={{ background: "#E1F5EE", color: "#0F6E56" }}
+            style={{ background: "#FFF0ED", color: "#E8421A" }}
           >
             Franquias +{diff}pp acima
           </div>
@@ -301,7 +301,7 @@ export function EmpregoFormal({
               <div className="text-xs mt-1" style={{ color: "#888" }}>
                 do emprego em comercio + servicos
               </div>
-              <div className="text-xs mt-4 px-3 py-1 rounded-full" style={{ background: "#E1F5EE", color: "#0F6E56" }}>
+              <div className="text-xs mt-4 px-3 py-1 rounded-full" style={{ background: "#FFF0ED", color: "#E8421A" }}>
                 {empregosAbf ? `${(empregosAbf / 1_000_000).toFixed(2)} mi empregos diretos` : ""}
               </div>
               <div className="text-[10px] mt-2" style={{ color: "#bbb" }}>

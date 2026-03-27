@@ -281,7 +281,7 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
                 strokeWidth={selectedSeg === seg ? 3.5 : 2.5}
                 dot={{ r: selectedSeg === seg ? 5 : 3, fill: corSegmento(seg, i), stroke: "#fff", strokeWidth: 2 }}
                 hide={hiddenLines.has(seg)}
-                connectNulls
+                connectNulls={false}
                 opacity={selectedSeg && selectedSeg !== seg ? 0.25 : 1}
               />
             ))}

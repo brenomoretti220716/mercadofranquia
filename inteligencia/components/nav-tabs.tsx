@@ -73,6 +73,11 @@ export default function NavTabs({ data }: { data: AllData }) {
           anual={data.anual}
           pibTrimestral={data.pibTrimestral}
           pibEstado={data.pibEstado}
+          selic={data.selic}
+          ipca={data.ipca}
+          desemprego={data.desemprego}
+          consumidorPainel={data.consumidorPainel}
+          projecoes={data.projecoes}
         />
       )}
       {activeTab === "segmentos" && (

@@ -4,19 +4,16 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid,
   LineChart, Line, Legend,
 } from "recharts"
-import { Card, CardContent } from "@/components/ui/card"
 import { InsightBox, h, GraficoRodape } from "@/components/insight-box"
 
-const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
-const COR_PRIMARIA = "#E8421A"
-const COR_COMPARATIVO = "#2563EB"
-const COR_LARANJA_LIGHT = "#F4845F"
-const COR_COVID = "#D32F2F"
-
-const CORES_SEG = ["#E8421A", "#F4845F", "#F7A072", "#2196F3", "#7C4DFF", "#00BCD4", "#FF9800", "#4CAF50"]
+const CARD = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" } as const
+const P = "#E8421A"
+const AZUL = "#2563EB"
+const COVID = "#D32F2F"
+const LIGHT = "#F4845F"
 
 const CORES_REGIAO: Record<string, string> = {
-  Sudeste: "#E8421A", Sul: "#2196F3", Nordeste: "#FF9800", "Centro-Oeste": "#7C4DFF", Norte: "#00BCD4",
+  Sudeste: P, Sul: AZUL, Nordeste: "#FF9800", "Centro-Oeste": "#7C4DFF", Norte: "#00BCD4",
 }
 const ESTADO_REGIAO: Record<string, string> = {
   "São Paulo": "Sudeste", "Rio de Janeiro": "Sudeste", "Minas Gerais": "Sudeste", "Espírito Santo": "Sudeste",
@@ -27,25 +24,17 @@ const ESTADO_REGIAO: Record<string, string> = {
   "Pará": "Norte", "Amazonas": "Norte", "Rondônia": "Norte", "Tocantins": "Norte", "Acre": "Norte", "Amapá": "Norte", "Roraima": "Norte",
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function Secao({ num, titulo }: { num: number; titulo: string }) {
   return (
-    <div className="flex items-center gap-3 mt-8 mb-4">
-      <h3 className="text-[11px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: "#1A1A1A" }}>{children}</h3>
+    <div className="flex items-center gap-3 mt-10 mb-5">
+      <span className="inline-flex items-center justify-center shrink-0 text-xs font-bold text-white" style={{ width: 26, height: 26, borderRadius: "50%", background: P }}>{num}</span>
+      <h3 className="text-sm font-bold uppercase tracking-wide" style={{ color: "#1A1A1A" }}>{titulo}</h3>
       <div className="flex-1 h-px" style={{ background: "#E5E5E5" }} />
     </div>
   )
 }
 
-function FonteBadge({ children }: { children: React.ReactNode }) {
-  return <div className="text-right mt-3" style={{ fontSize: 10, color: "#BBB" }}>{children}</div>
-}
-
-function corBarra(p: string, parcial?: boolean) {
-  if (p === "2020") return COR_COVID
-  if (parcial) return "#F4845F"
-  if (p === "2024") return COR_PRIMARIA
-  return COR_LARANJA_LIGHT
-}
+function selicAnualizada(taxaDiaria: number) { return ((1 + taxaDiaria / 100) ** 252 - 1) * 100 }
 
 interface Props {
   kpis: { label: string; valor: string; sub: string; cor: string }[]
@@ -56,12 +45,18 @@ interface Props {
   anual: any[]
   pibTrimestral: any
   pibEstado: any
+  selic: any
+  ipca: any
+  desemprego: any
+  consumidorPainel: any
+  projecoes: any[]
 }
 
-export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anual, pibTrimestral, pibEstado }: Props) {
-  const maxSeg = segmentos[0]?.valor_mm ?? 1
-
+export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anual, pibTrimestral, pibEstado, selic, ipca, desemprego, consumidorPainel, projecoes }: Props) {
+  // ── Dados processados ─────────────────────────────────────────────
   const totais = anual.filter((r: any) => r.segmento === "Total").sort((a: any, b: any) => a.periodo.localeCompare(b.periodo))
+
+  // Franchising vs PIB
   const pibPorAno = new Map<string, number[]>()
   for (const d of (pibTrimestral?.dados || [])) {
     const ano = d.data.slice(0, 4)
@@ -70,7 +65,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   }
   const serieFatVsPib: { ano: string; abf: number | null; pib: number | null }[] = []
   for (let i = 1; i < totais.length; i++) {
-    const ano = totais[i].periodo.replace(/\D/g, "").slice(0, 4)
+    const ano = totais[i].periodo.match(/(\d{4})/)?.[1] || ""
     const anoNum = parseInt(ano)
     if (anoNum < 2015 || anoNum > 2024) continue
     const crescAbf = ((totais[i].valor_mm / totais[i - 1].valor_mm) - 1) * 100
@@ -80,6 +75,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
     serieFatVsPib.push({ ano, abf: +crescAbf.toFixed(1), pib: crescPib })
   }
 
+  // PIB por estado
   const pibDados = pibEstado?.dados || []
   const anosDisp = [...new Set(pibDados.map((d: any) => d.data))].sort()
   const anoRecente = anosDisp[anosDisp.length - 1] as string
@@ -88,125 +84,131 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
   const maxPib = top10[0]?.valor_bi ?? 1
   const regioes = [...new Set(top10.map((d: any) => d.regiao))] as string[]
 
-  // ── Cálculos de insights ────────────────────────────────────────────
+  // Macro KPIs
+  const selicDados = selic?.dados || []
+  const selicAtual = selicDados.length > 0 ? selicAnualizada(selicDados[selicDados.length - 1]?.valor) : 0
+  const ipcaDados = ipca?.dados || []
+  const ipca12m = ipcaDados.length >= 12 ? +((ipcaDados.slice(-12).reduce((acc: number, d: any) => acc * (1 + d.valor / 100), 1) - 1) * 100).toFixed(1) : 0
+  const desempDados = desemprego?.dados || []
+  const desempAtual = desempDados.length > 0 ? desempDados[desempDados.length - 1]?.valor : 0
+  const iccDados = consumidorPainel?.icc?.dados || []
+  const iccAtual = iccDados.length > 0 ? iccDados[iccDados.length - 1]?.valor : 0
+
+  // Cálculos de insight
   const primeiro = serieAnual[0]
   const ultimoAnual = serieAnual.filter((s) => !s.parcial).pop() || serieAnual[serieAnual.length - 1]
   const crescTotal = primeiro && ultimoAnual ? Math.round(((ultimoAnual.valor_bi / primeiro.valor_bi) - 1) * 100) : 0
-  const queda2020 = serieAnual.find((s) => s.periodo === "2020")
-  const pre2020 = serieAnual.find((s) => s.periodo === "2019")
-  const var2020 = queda2020 && pre2020 ? +((queda2020.valor_bi / pre2020.valor_bi - 1) * 100).toFixed(1) : 0
+  const var2020 = (() => { const q = serieAnual.find((s) => s.periodo === "2020"), p = serieAnual.find((s) => s.periodo === "2019"); return q && p ? +((q.valor_bi / p.valor_bi - 1) * 100).toFixed(1) : 0 })()
+  const anosAcimaPib = serieFatVsPib.filter((s) => s.abf != null && s.pib != null && s.abf! > s.pib!).length
+  const totalComp = serieFatVsPib.filter((s) => s.abf != null && s.pib != null).length
+  const mediaSup = totalComp > 0 ? +(serieFatVsPib.filter((s) => s.abf != null && s.pib != null).reduce((a, s) => a + (s.abf! - s.pib!), 0) / totalComp).toFixed(1) : 0
+  const top3Pib = top10.slice(0, 3).reduce((a: number, d: any) => a + d.valor_bi, 0)
+  const totalPib10 = top10.reduce((a: number, d: any) => a + d.valor_bi, 0)
+  const top3PibPct = totalPib10 > 0 ? Math.round((top3Pib / totalPib10) * 100) : 0
 
-  const anosAcimaDosPib = serieFatVsPib.filter((s) => s.abf !== null && s.pib !== null && s.abf! > s.pib!).length
-  const totalAnosComparativo = serieFatVsPib.filter((s) => s.abf !== null && s.pib !== null).length
-  const mediaSuperacao = totalAnosComparativo > 0
-    ? +(serieFatVsPib.filter((s) => s.abf !== null && s.pib !== null).reduce((acc, s) => acc + (s.abf! - s.pib!), 0) / totalAnosComparativo).toFixed(1)
-    : 0
+  // Semáforo
+  const crescRecente = serieAnual.length >= 2 ? +((serieAnual[serieAnual.length - 1].valor_bi / serieAnual[serieAnual.length - 2].valor_bi - 1) * 100).toFixed(1) : 0
+  const semaforoVerde = iccAtual > 110 && selicAtual < 12 && crescRecente > 8
+  const semaforoVermelho = iccAtual < 90 || selicAtual > 14
+  const semaforo = semaforoVerde ? "favoravel" : semaforoVermelho ? "cautela" : "neutro"
+  const semaforoCor = semaforo === "favoravel" ? "#2E7D32" : semaforo === "cautela" ? COVID : "#F59E0B"
+  const semaforoBg = semaforo === "favoravel" ? "#E8F5E9" : semaforo === "cautela" ? "#FFEBEE" : "#FFF8E1"
 
-  const totalFat = segmentos.reduce((acc, s) => acc + s.valor_mm, 0)
-  const top3Fat = segmentos.slice(0, 3).reduce((acc, s) => acc + s.valor_mm, 0)
-  const top3Pct = totalFat > 0 ? Math.round((top3Fat / totalFat) * 100) : 0
-  const liderPct = totalFat > 0 ? Math.round((segmentos[0]?.valor_mm / totalFat) * 100) : 0
+  // Projeção 2025
+  const proj2025 = (projecoes || []).find((p: any) => p.ano_referencia === 2025)
+  const superouCount = (projecoes || []).filter((p: any) => p.fat_realizado_pct > p.fat_var_max_pct).length
+  const totalProj = (projecoes || []).length
 
   return (
     <>
-      {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      {/* ═══ SEÇÃO 1 — O SETOR EM NÚMEROS ═══ */}
+      <Secao num={1} titulo="O Setor em Numeros" />
+      <div className="grid grid-cols-4 gap-4 mb-2">
         {kpis.map((k, i) => (
           <div key={i} className="p-5" style={CARD}>
             <div className="text-[11px] uppercase tracking-wider font-semibold mb-2" style={{ color: "#999" }}>{k.label}</div>
             <div className="text-3xl font-bold" style={{ color: "#1A1A1A" }}>{k.valor}</div>
-            <div className="text-xs mt-1 font-medium" style={{ color: i === 0 ? COR_PRIMARIA : "#999" }}>{k.sub}</div>
+            <div className="text-xs mt-1 font-medium" style={{ color: i === 0 ? P : "#999" }}>{k.sub}</div>
           </div>
         ))}
       </div>
 
-      <SectionTitle>Faturamento</SectionTitle>
+      {/* ═══ SEÇÃO 2 — CRESCIMENTO CONSISTENTE ═══ */}
+      <Secao num={2} titulo="11 Anos de Crescimento Consistente" />
       <InsightBox insights={[
-        `O setor cresceu ${h(crescTotal + "%")} nos ultimos 11 anos, de R$ ${h(primeiro?.valor_bi)} bi em ${primeiro?.periodo} para R$ ${h(ultimoAnual?.valor_bi)} bi em ${ultimoAnual?.periodo}`,
-        `Unico ano de queda foi 2020 (${h(var2020 + "%")}) devido a pandemia — recuperacao completa em 2021`,
+        `O setor cresceu ${h(crescTotal + "%")} em 11 anos, de R$ ${h(primeiro?.valor_bi)} bi (${primeiro?.periodo}) para R$ ${h(ultimoAnual?.valor_bi)} bi (${ultimoAnual?.periodo})`,
+        `Unico ano de queda: 2020 (${h(var2020 + "%")}) — recuperacao completa em 2021`,
       ]} />
-      <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
-        <div className="p-6" style={CARD}>
-          <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>
-            Faturamento anual — {primeiro?.periodo}-{serieAnual[serieAnual.length - 1]?.periodo} — R$ bilhoes
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={serieAnual} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F0F0F0" />
-              <XAxis dataKey="periodo" tick={{ fontSize: 10, fill: "#BBB" }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "#BBB" }} tickLine={false} axisLine={false} />
-              <Tooltip formatter={(value) => [`R$ ${value} bi`, "Faturamento"]} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #eee" }} />
-              <Bar dataKey="valor_bi" radius={[4, 4, 0, 0]} maxBarSize={36}>
-                {serieAnual.map((e) => <Cell key={e.periodo} fill={corBarra(e.periodo, e.parcial)} opacity={e.parcial ? 0.6 : 1} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          <GraficoRodape fonte="ABF" periodo={`${primeiro?.periodo}-${serieAnual[serieAnual.length - 1]?.periodo}`} nota="R$ bilhoes correntes" />
-        </div>
-        <div className="p-6" style={CARD}>
-          <div className="text-[11px] uppercase tracking-wider font-semibold mb-3" style={{ color: "#999" }}>Top segmentos</div>
-          <div className="mb-3 px-2.5 py-2" style={{ background: "#FFF0ED", borderLeft: "3px solid #E8421A", borderRadius: 6, fontSize: 11 }}>
-            {segmentos[0]?.segmento} lidera com <strong style={{ color: "#E8421A" }}>R$ {(segmentos[0]?.valor_mm / 1000).toFixed(1)} bi</strong> ({liderPct}% do total). Top 3 = {top3Pct}% do setor.
-          </div>
-          <div className="flex flex-col gap-3">
-            {segmentos.slice(0, 8).map((r, i) => (
-              <div key={r.segmento}>
-                <div className="flex justify-between mb-1">
-                  <span style={{ fontSize: 11, color: "#666" }}>{r.segmento}</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "#1A1A1A" }}>R$ {(r.valor_mm / 1000).toFixed(1)} bi</span>
-                </div>
-                <div className="rounded-full" style={{ height: 6, background: "#F0F0F0" }}>
-                  <div className="rounded-full" style={{ height: "100%", background: CORES_SEG[i], width: `${(r.valor_mm / maxSeg) * 100}%`, opacity: 1 - i * 0.07 }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <SectionTitle>Empregos Diretos</SectionTitle>
-      <div className="p-6 mb-4" style={CARD}>
+      <div className="p-6" style={CARD}>
         <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>
-          Evolucao de empregos diretos — {serieEmpregos[0]?.ano}-{serieEmpregos[serieEmpregos.length - 1]?.ano} — milhoes
+          Faturamento anual — {primeiro?.periodo}-{serieAnual[serieAnual.length - 1]?.periodo} — R$ bilhoes
         </div>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={serieEmpregos} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={serieAnual} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F0F0F0" />
-            <XAxis dataKey="ano" tick={{ fontSize: 10, fill: "#BBB" }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "#BBB" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => v.toFixed(1)} domain={["auto", "auto"]} />
-            <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} mi`, "Empregos"]} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #eee" }} />
-            <Line type="monotone" dataKey="empregos_mi" stroke={COR_PRIMARIA} strokeWidth={2.5} dot={{ r: 4, fill: COR_PRIMARIA, stroke: "#fff", strokeWidth: 2 }} />
-          </LineChart>
+            <XAxis dataKey="periodo" tick={{ fontSize: 10, fill: "#BBB" }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "#BBB" }} tickLine={false} axisLine={false} />
+            <Tooltip formatter={(value) => [`R$ ${value} bi`, "Faturamento"]} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #eee" }} />
+            <Bar dataKey="valor_bi" radius={[4, 4, 0, 0]} maxBarSize={40}>
+              {serieAnual.map((e) => <Cell key={e.periodo} fill={e.periodo === "2020" ? COVID : e.parcial ? LIGHT : P} opacity={e.parcial ? 0.6 : 1} />)}
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
-        <GraficoRodape fonte="ABF" periodo={`${serieEmpregos[0]?.ano}-${serieEmpregos[serieEmpregos.length - 1]?.ano}`} />
+        <GraficoRodape fonte="ABF" periodo={`${primeiro?.periodo}-${serieAnual[serieAnual.length - 1]?.periodo}`} nota="R$ bilhoes correntes · * parcial" />
       </div>
 
-      <SectionTitle>Franchising vs PIB</SectionTitle>
+      {/* ═══ SEÇÃO 3 — FRANCHISING SUPERA A ECONOMIA ═══ */}
+      <Secao num={3} titulo="Franchising Supera a Economia" />
       <InsightBox insights={[
-        `Franchising cresceu em media ${h(mediaSuperacao + "pp")} acima do PIB — em ${h(anosAcimaDosPib)} dos ultimos ${h(totalAnosComparativo)} anos superou a economia`,
+        `Franchising cresceu em media ${h(mediaSup + "pp")} acima do PIB — em ${h(anosAcimaPib)} dos ultimos ${h(totalComp)} anos superou a economia`,
       ]} />
-      <div className="p-6 mb-4" style={CARD}>
+      <div className="p-6" style={CARD}>
         <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>
           Crescimento anual — Franchising ABF vs PIB Brasil — 2015-2024 (%)
         </div>
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={260}>
           <LineChart data={serieFatVsPib} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F0F0F0" />
             <XAxis dataKey="ano" tick={{ fontSize: 11, fill: "#BBB" }} tickLine={false} axisLine={false} />
             <YAxis tick={{ fontSize: 10, fill: "#BBB" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} />
             <Tooltip formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name === "abf" ? "Franchising ABF" : "PIB Brasil"]} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #eee" }} />
             <Legend formatter={(v) => (v === "abf" ? "Franchising ABF" : "PIB Brasil")} wrapperStyle={{ fontSize: 11 }} />
-            <Line type="monotone" dataKey="abf" stroke={COR_PRIMARIA} strokeWidth={2.5} dot={{ r: 4, fill: COR_PRIMARIA, stroke: "#fff", strokeWidth: 2 }} />
-            <Line type="monotone" dataKey="pib" stroke={COR_COMPARATIVO} strokeWidth={1.8} strokeDasharray="5 5" dot={{ r: 3, fill: COR_COMPARATIVO, stroke: "#fff", strokeWidth: 2 }} connectNulls />
+            <Line type="monotone" dataKey="abf" stroke={P} strokeWidth={2.5} dot={{ r: 4, fill: P, stroke: "#fff", strokeWidth: 2 }} />
+            <Line type="monotone" dataKey="pib" stroke={AZUL} strokeWidth={1.8} strokeDasharray="5 5" dot={{ r: 3, fill: AZUL, stroke: "#fff", strokeWidth: 2 }} connectNulls />
           </LineChart>
         </ResponsiveContainer>
         <GraficoRodape fonte="ABF + BCB" periodo="2015-2024" />
       </div>
 
-      <SectionTitle>PIB por Estado</SectionTitle>
+      {/* ═══ SEÇÃO 4 — AMBIENTE MACRO ATUAL ═══ */}
+      <Secao num={4} titulo="O Ambiente Macro Atual" />
+      <InsightBox insights={[
+        `Com ICC em ${h(iccAtual.toFixed(0))}, Selic em ${h(selicAtual.toFixed(1) + "%")}, IPCA em ${h(ipca12m + "%")} e desemprego em ${h(desempAtual.toFixed(1) + "%")}, o ambiente e ${h(semaforo === "favoravel" ? "favoravel" : semaforo === "cautela" ? "de cautela" : "neutro")} para abertura de franquias`,
+      ]} />
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: "ICC (Confianca)", valor: iccAtual.toFixed(0), badge: iccAtual > 110 ? "Favoravel" : iccAtual < 90 ? "Baixo" : "Neutro", badgeCor: iccAtual > 110 ? "#2E7D32" : iccAtual < 90 ? COVID : "#F59E0B", badgeBg: iccAtual > 110 ? "#E8F5E9" : iccAtual < 90 ? "#FFEBEE" : "#FFF8E1" },
+          { label: "Selic % a.a.", valor: selicAtual.toFixed(1) + "%", badge: selicAtual < 10 ? "Credito barato" : selicAtual > 13 ? "Credito caro" : "Moderada", badgeCor: selicAtual < 10 ? "#2E7D32" : selicAtual > 13 ? COVID : "#F59E0B", badgeBg: selicAtual < 10 ? "#E8F5E9" : selicAtual > 13 ? "#FFEBEE" : "#FFF8E1" },
+          { label: "IPCA 12 meses", valor: ipca12m + "%", badge: ipca12m > 4.5 ? "Acima da meta" : ipca12m < 3 ? "Abaixo da meta" : "Na meta", badgeCor: ipca12m > 4.5 ? COVID : ipca12m < 3 ? AZUL : "#2E7D32", badgeBg: ipca12m > 4.5 ? "#FFEBEE" : "#E8F5E9" },
+          { label: "Desemprego", valor: desempAtual.toFixed(1) + "%", badge: desempAtual < 7 ? "Baixo" : desempAtual > 10 ? "Alto" : "Moderado", badgeCor: desempAtual < 7 ? "#2E7D32" : desempAtual > 10 ? COVID : "#F59E0B", badgeBg: desempAtual < 7 ? "#E8F5E9" : desempAtual > 10 ? "#FFEBEE" : "#FFF8E1" },
+        ].map((k) => (
+          <div key={k.label} className="p-4" style={CARD}>
+            <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>{k.label}</div>
+            <div className="text-2xl font-bold mb-2" style={{ color: "#1A1A1A" }}>{k.valor}</div>
+            <span className="text-[10px] font-semibold px-2 py-0.5" style={{ background: k.badgeBg, color: k.badgeCor, borderRadius: 4 }}>{k.badge}</span>
+          </div>
+        ))}
+      </div>
+      <GraficoRodape fonte="BCB + FGV" periodo="ultimo disponivel" />
+
+      {/* ═══ SEÇÃO 5 — POTENCIAL POR REGIÃO ═══ */}
+      <Secao num={5} titulo="Potencial por Regiao" />
+      <InsightBox insights={[
+        `${top10[0]?.estado}, ${top10[1]?.estado} e ${top10[2]?.estado} concentram ${h(top3PibPct + "%")} do PIB do top 10 — maior potencial de mercado para franquias`,
+      ]} />
       <div className="p-6" style={CARD}>
         <div className="flex items-center justify-between mb-5">
-          <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>Top 10 ({anoRecente})</div>
+          <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>PIB por estado — Top 10 ({anoRecente})</div>
           <div className="flex gap-3">
             {regioes.map((r) => (
               <span key={r} className="flex items-center gap-1" style={{ fontSize: 10, color: "#888" }}>
@@ -226,7 +228,64 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
             </div>
           ))}
         </div>
-        <GraficoRodape fonte="IBGE — Contas Regionais" periodo={anoRecente || "ultimo disponivel"} />
+        <GraficoRodape fonte="IBGE — Contas Regionais" periodo={anoRecente || "ultimo"} />
+      </div>
+
+      {/* ═══ SEÇÃO 6 — MOMENTO E PROJEÇÃO ═══ */}
+      <Secao num={6} titulo="Momento e Projecao" />
+      <div className="p-6" style={{ ...CARD, borderLeft: `4px solid ${semaforoCor}` }}>
+        <div className="flex items-center gap-3 mb-4">
+          <span className="inline-block" style={{ width: 14, height: 14, borderRadius: "50%", background: semaforoCor }} />
+          <span className="text-lg font-bold" style={{ color: semaforoCor }}>
+            Momento {semaforo === "favoravel" ? "Favoravel" : semaforo === "cautela" ? "de Cautela" : "Neutro"}
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="p-3" style={{ background: semaforoBg, borderRadius: 8 }}>
+            <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: semaforoCor }}>Confianca</div>
+            <div className="text-lg font-bold" style={{ color: "#1A1A1A" }}>ICC {iccAtual.toFixed(0)}</div>
+            <div className="text-[10px]" style={{ color: "#999" }}>{iccAtual > 110 ? "Acima de 110 = favoravel" : iccAtual < 90 ? "Abaixo de 90 = cautela" : "Entre 90-110 = neutro"}</div>
+          </div>
+          <div className="p-3" style={{ background: semaforoBg, borderRadius: 8 }}>
+            <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: semaforoCor }}>Custo do credito</div>
+            <div className="text-lg font-bold" style={{ color: "#1A1A1A" }}>Selic {selicAtual.toFixed(1)}%</div>
+            <div className="text-[10px]" style={{ color: "#999" }}>{selicAtual < 12 ? "Abaixo de 12% = acessivel" : "Acima de 12% = encarece"}</div>
+          </div>
+          <div className="p-3" style={{ background: semaforoBg, borderRadius: 8 }}>
+            <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: semaforoCor }}>Crescimento recente</div>
+            <div className="text-lg font-bold" style={{ color: "#1A1A1A" }}>{crescRecente > 0 ? "+" : ""}{crescRecente}%</div>
+            <div className="text-[10px]" style={{ color: "#999" }}>{crescRecente > 8 ? "Acima de 8% = forte" : "Abaixo de 8% = moderado"}</div>
+          </div>
+        </div>
+
+        {proj2025 && (
+          <div className="p-4 mb-3" style={{ background: "#F8F8F8", borderRadius: 8 }}>
+            <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>Projecao ABF 2025</div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm" style={{ color: "#999" }}>Projetado: +{proj2025.fat_var_min_pct}% a +{proj2025.fat_var_max_pct}%</span>
+              <span className="text-sm font-bold" style={{ color: P }}>Realizado parcial: +{proj2025.fat_realizado_pct}%</span>
+              {proj2025.fat_realizado_pct > proj2025.fat_var_max_pct && (
+                <span className="text-[10px] font-semibold px-2 py-0.5" style={{ background: "#E8F5E9", color: "#2E7D32", borderRadius: 4 }}>Superou</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold px-2 py-0.5" style={{ background: "#FFF0ED", color: P, borderRadius: 4 }}>
+            Setor superou projecao em {superouCount} dos ultimos {totalProj} anos
+          </span>
+        </div>
+
+        <div className="mt-4 text-sm" style={{ color: "#666" }}>
+          {semaforo === "favoravel"
+            ? "O conjunto de indicadores aponta para um momento positivo para investir em franquias — confianca alta, credito acessivel e setor em crescimento."
+            : semaforo === "cautela"
+              ? "Indicadores macro sugerem cautela — avalie bem o segmento e a regiao antes de investir. O setor como um todo continua crescendo, mas o custo de entrada esta elevado."
+              : "Momento neutro — indicadores mistos. Oportunidades existem em segmentos especificos e regioes com maior potencial."}
+        </div>
+
+        <GraficoRodape fonte="ABF + BCB + FGV" periodo="ultimo disponivel" />
       </div>
     </>
   )

@@ -228,6 +228,32 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
   const maxSeg = segmentos[0]?.valor_mm ?? 1
   const pmcDados = pmcData?.dados || []
 
+  // ── Período do ranking (detectar automaticamente) ────────────────
+  const rankingPeriodo = useMemo(() => {
+    if (segmentos.length === 0) return { label: "", subtitulo: "", badge: "" }
+    // segmentos vem da page.tsx: prefere 3T2025 (12m), senão 4T2023
+    const periodoRaw = segmentos[0]?.periodo || segmentos[0]?.tipo_dado || ""
+    if (periodoRaw === "3T2025" || segmentos.some((s: any) => s.periodo === "3T2025")) {
+      return {
+        label: "3T2025 (acumulado 12 meses)",
+        subtitulo: "Acumulado 12 meses ate 3o Trimestre de 2025",
+        badge: "3T2025",
+        fonte: "Fonte: ABF · Periodo: acumulado 12 meses ate 3T2025",
+      }
+    }
+    return {
+      label: "4T2023 (anual)",
+      subtitulo: "Fechamento anual 2023",
+      badge: "2023",
+      fonte: "Fonte: ABF · Periodo: fechamento anual 2023",
+    }
+  }, [segmentos])
+
+  const totalFatSeg = segmentos.reduce((acc: number, s: any) => acc + s.valor_mm, 0)
+  const top3FatSeg = segmentos.slice(0, 3).reduce((acc: number, s: any) => acc + s.valor_mm, 0)
+  const top3PctSeg = totalFatSeg > 0 ? Math.round((top3FatSeg / totalFatSeg) * 100) : 0
+  const liderPctSeg = totalFatSeg > 0 ? Math.round((segmentos[0]?.valor_mm / totalFatSeg) * 100) : 0
+
   // ── Insights calculados ──────────────────────────────────────────
   const segCrescimentos = useMemo(() => {
     return heatmapData
@@ -310,7 +336,22 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
 
       {/* Ranking barras horizontais */}
       <SectionTitle>Ranking de Segmentos</SectionTitle>
+      <InsightBox insights={[
+        `${h(segmentos[0]?.segmento)} lidera com ${h("R$ " + (segmentos[0]?.valor_mm / 1000).toFixed(1) + " bi")} no ${rankingPeriodo.subtitulo} — ${h(liderPctSeg + "%")} do total do setor`,
+        `Os 3 maiores segmentos (${segmentos.slice(0, 3).map((s: any) => s.segmento).join(", ")}) concentram ${h(top3PctSeg + "%")} do faturamento`,
+      ]} />
       <div className="p-6 mb-4" style={CARD}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>
+              Faturamento por segmento — {rankingPeriodo.label} — R$ bilhoes
+            </div>
+            <div className="text-[10px] mt-0.5" style={{ color: "#CCC" }}>{rankingPeriodo.subtitulo}</div>
+          </div>
+          <span className="text-[10px] font-semibold px-2 py-0.5" style={{ background: "#FFF0ED", color: COR_PRIMARIA, borderRadius: 6 }}>
+            {rankingPeriodo.badge}
+          </span>
+        </div>
         <div className="flex flex-col gap-2.5">
           {segmentos.map((r: any, i: number) => {
             const isSelected = selectedSeg === r.segmento
@@ -327,12 +368,15 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
                 <div className="flex-1 rounded-full" style={{ height: 8, background: "#F0F0F0" }}>
                   <div className="rounded-full transition-all" style={{ height: "100%", background: corSegmento(r.segmento, i), width: `${(r.valor_mm / maxSeg) * 100}%` }} />
                 </div>
-                <span className="shrink-0 font-semibold" style={{ fontSize: 11, color: "#1A1A1A", width: 70, textAlign: "right" }}>
+                <span className="shrink-0 font-semibold" style={{ fontSize: 11, color: "#1A1A1A", width: 80, textAlign: "right" }}>
                   R$ {(r.valor_mm / 1000).toFixed(1)} bi
                 </span>
               </button>
             )
           })}
+        </div>
+        <div className="text-right mt-3" style={{ fontSize: 10, color: "#CCC" }}>
+          {rankingPeriodo.fonte} · Valores em R$ bilhoes correntes
         </div>
       </div>
 
@@ -342,8 +386,11 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
           <SectionTitle>{selectedSeg} — Detalhe</SectionTitle>
           <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div className="p-6" style={CARD}>
-              <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>
-                Faturamento {selectedSeg} — R$ bilhoes
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>
+                  Faturamento {selectedSeg} — R$ bilhoes
+                </div>
+                <span style={{ fontSize: 10, color: "#BBB" }}>Fonte: ABF</span>
               </div>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={detalhe.serie} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>

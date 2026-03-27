@@ -40,8 +40,9 @@ export function TabProjecoes({ projecoes }: { projecoes: Projecao[] }) {
       </div>
 
       <div className="p-6" style={CARD}>
-        <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>
-          Projecao ABF vs Resultado Realizado
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>Projecao ABF vs Resultado Realizado</div>
+          <span style={{ fontSize: 10, color: "#BBB" }}>Fonte: ABF 2021-2025</span>
         </div>
         <Table>
           <TableHeader>

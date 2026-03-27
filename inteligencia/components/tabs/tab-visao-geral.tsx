@@ -35,6 +35,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   )
 }
 
+function FonteBadge({ children }: { children: React.ReactNode }) {
+  return <div className="text-right mt-3" style={{ fontSize: 10, color: "#BBB" }}>{children}</div>
+}
+
 function corBarra(p: string) {
   if (p === "2020") return COR_COVID
   if (p === "2024") return COR_PRIMARIA
@@ -98,7 +102,10 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
       <SectionTitle>Faturamento</SectionTitle>
       <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
         <div className="p-6" style={CARD}>
-          <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>Faturamento anual — R$ bilhoes</div>
+          <div className="flex items-center justify-between mb-4">
+          <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>Faturamento anual — R$ bilhoes</div>
+          <span style={{ fontSize: 10, color: "#BBB" }}>Fonte: ABF 2014-2025</span>
+        </div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={serieAnual} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F0F0F0" />
@@ -145,7 +152,10 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, serieEmpregos, anua
 
       <SectionTitle>Franchising vs PIB</SectionTitle>
       <div className="p-6 mb-4" style={CARD}>
-        <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>Crescimento anual — Franchising ABF vs PIB Brasil (%)</div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>Crescimento anual — Franchising ABF vs PIB Brasil (%)</div>
+          <span style={{ fontSize: 10, color: "#BBB" }}>Fonte: ABF + BCB</span>
+        </div>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={serieFatVsPib} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F0F0F0" />

@@ -9,7 +9,7 @@ import { TabProjecoes } from "@/components/tabs/tab-projecoes"
 
 const TABS = [
   { id: "visao-geral", label: "Visao Geral" },
-  { id: "segmentos", label: "Segmentos" },
+  { id: "segmentos", label: "Segmentos ABF" },
   { id: "cenario", label: "Cenario Economico" },
   { id: "ranking", label: "Ranking de Marcas" },
   { id: "projecoes", label: "Projecoes" },
@@ -45,19 +45,17 @@ export default function NavTabs({ data }: { data: AllData }) {
 
   return (
     <>
-      <div
-        className="flex gap-0 overflow-x-auto mb-6"
-        style={{ borderBottom: "1px solid #E5E5E5" }}
-      >
+      {/* Pills navigation */}
+      <div className="flex gap-1.5 overflow-x-auto mb-6 p-1" style={{ background: "#F0F0F0", borderRadius: 10 }}>
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className="px-5 py-3 text-xs font-semibold whitespace-nowrap transition-all shrink-0"
+            className="px-4 py-2 text-xs font-semibold whitespace-nowrap transition-all shrink-0"
             style={{
-              color: activeTab === tab.id ? "#E8421A" : "#999",
-              borderBottom: activeTab === tab.id ? "2px solid #E8421A" : "2px solid transparent",
-              marginBottom: -1,
+              background: activeTab === tab.id ? "#E8421A" : "transparent",
+              color: activeTab === tab.id ? "#fff" : "#666",
+              borderRadius: 8,
             }}
           >
             {tab.label}

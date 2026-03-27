@@ -54,8 +54,9 @@ export function TabRanking({ ranking, segmentos }: Props) {
       </div>
 
       <div className="p-6" style={CARD}>
-        <div className="text-[11px] uppercase tracking-wider font-semibold mb-4" style={{ color: "#999" }}>
-          Maiores redes por numero de unidades — {anoAtivo}
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>Maiores redes por numero de unidades — {anoAtivo}</div>
+          <span style={{ fontSize: 10, color: "#BBB" }}>Fonte: ABF + RankFranchise</span>
         </div>
         <div style={{ maxHeight: 600, overflowY: "auto" }}>
           <Table>

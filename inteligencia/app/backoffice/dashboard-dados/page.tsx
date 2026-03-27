@@ -66,10 +66,15 @@ export default async function DashboardDadosPage() {
   return (
     <>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold" style={{ color: "#1A1A1A" }}>
-          Intelligence Dashboard
-        </h1>
-        <p className="text-sm mt-1" style={{ color: "#666" }}>
+        <div className="flex items-center gap-2 mb-1">
+          <h1 className="text-2xl font-bold" style={{ color: "#1A1A1A" }}>
+            Intelligence Dashboard
+          </h1>
+          <span className="text-[10px] font-semibold px-2 py-0.5" style={{ background: "#FFF0ED", color: "#E8421A", borderRadius: 6 }}>
+            BETA
+          </span>
+        </div>
+        <p className="text-sm" style={{ color: "#666" }}>
           Dados ABF 2014-2025 · BCB · IBGE · CAGED · Atualizado Mar/2026
         </p>
       </div>

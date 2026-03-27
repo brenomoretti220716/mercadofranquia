@@ -61,7 +61,10 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
     <>
       <SectionTitle>Ranking de Segmentos</SectionTitle>
       <div className="p-6 mb-4" style={CARD}>
-        <div className="text-[11px] uppercase tracking-wider font-semibold mb-5" style={{ color: "#999" }}>Faturamento por segmento 2023 — R$ bilhoes</div>
+        <div className="flex items-center justify-between mb-5">
+          <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>Faturamento por segmento 2023 — R$ bilhoes</div>
+          <span style={{ fontSize: 10, color: "#BBB" }}>Fonte: ABF</span>
+        </div>
         <div className="flex flex-col gap-3">
           {segmentos.map((r: any, i: number) => (
             <div key={r.segmento} className="flex items-center gap-3">
@@ -91,7 +94,7 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
         </div>
       </div>
 
-      <SectionTitle>Franchising vs Varejo Geral (PMC)</SectionTitle>
+      <SectionTitle>Franchising vs Varejo Geral (PMC) — Fonte: ABF + IBGE/PMC</SectionTitle>
       <div className="grid grid-cols-4 gap-3">
         {COMPARATIVOS.map((comp) => {
           const pmcFilt = pmcDados.filter((d: any) => d.codigo_segmento === comp.codigoPMC && d.variacao_mensal != null).sort((a: any, b: any) => a.data.localeCompare(b.data)).map((d: any) => ({ mes: d.data, pmc: d.variacao_mensal }))

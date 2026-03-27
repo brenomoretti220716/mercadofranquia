@@ -191,7 +191,7 @@ def parse_detalhe(raw_html):
 
 # ── Scraper principal ────────────────────────────────────────────────────────
 
-def scrape_segmento(slug_segmento, nome_segmento, limit=None):
+def scrape_segmento(slug_segmento, nome_segmento, limit=None, com_detalhes=False):
     """Scrape todas as franquias de um segmento."""
     url = f"{BASE_URL}/franquias-de-{slug_segmento}/"
     print(f"  Buscando: {url}")
@@ -208,19 +208,19 @@ def scrape_segmento(slug_segmento, nome_segmento, limit=None):
     if limit:
         franquias = franquias[:limit]
 
-    # Buscar detalhes de cada franquia
-    for i, f in enumerate(franquias):
-        if f.get("url_fonte"):
-            time.sleep(RATE_LIMIT)
-            try:
-                detalhe_html = _fetch_html(f["url_fonte"])
-                detalhes = parse_detalhe(detalhe_html)
-                f.update(detalhes)
-                print(f"    [{i+1}/{len(franquias)}] {f['nome']} — {f.get('num_unidades', '?')} unidades")
-            except Exception as e:
-                print(f"    [{i+1}/{len(franquias)}] {f['nome']} — erro detalhe: {e}")
-        else:
-            print(f"    [{i+1}/{len(franquias)}] {f['nome']} — sem link individual")
+    if com_detalhes:
+        for i, f in enumerate(franquias):
+            if f.get("url_fonte"):
+                time.sleep(RATE_LIMIT)
+                try:
+                    detalhe_html = _fetch_html(f["url_fonte"])
+                    detalhes = parse_detalhe(detalhe_html)
+                    f.update(detalhes)
+                    print(f"    [{i+1}/{len(franquias)}] {f['nome']} — {f.get('num_unidades', '?')} unidades")
+                except Exception as e:
+                    print(f"    [{i+1}/{len(franquias)}] {f['nome']} — erro detalhe: {e}")
+            else:
+                print(f"    [{i+1}/{len(franquias)}] {f['nome']} — sem link individual")
 
     return franquias
 
@@ -278,10 +278,12 @@ def _log_sync(fonte, status, registros=0, erro=None):
     conn.close()
 
 
-def scrape_all(segmentos_filter=None, limit=None):
+def scrape_all(segmentos_filter=None, limit=None, com_detalhes=False):
     """Executa scraping de todas as categorias (ou filtradas)."""
     print(f"\n{'='*60}")
     print(f"  Scraper Portal do Franchising — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    if not com_detalhes:
+        print(f"  Modo rápido (listagem). Use --com-detalhes para unidades/selo.")
     print(f"{'='*60}\n")
 
     init_db()
@@ -300,7 +302,7 @@ def scrape_all(segmentos_filter=None, limit=None):
     for slug, nome in segmentos_to_scrape.items():
         print(f"\n[{nome}]")
         try:
-            franquias = scrape_segmento(slug, nome, limit=limit)
+            franquias = scrape_segmento(slug, nome, limit=limit, com_detalhes=com_detalhes)
             if franquias:
                 inseridos = salvar_franquias(franquias)
                 _log_sync(f"Scraper/{nome}", "ok", inseridos)
@@ -326,7 +328,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Scraper de franquias ABF")
     parser.add_argument("--segmento", type=str, help="Slug do segmento (ex: alimentacao)")
     parser.add_argument("--limit", type=int, help="Limite de franquias por segmento")
+    parser.add_argument("--com-detalhes", action="store_true", help="Buscar página individual de cada franquia (lento)")
     args = parser.parse_args()
 
     segmentos = [args.segmento] if args.segmento else None
-    scrape_all(segmentos_filter=segmentos, limit=args.limit)
+    scrape_all(segmentos_filter=segmentos, limit=args.limit, com_detalhes=args.com_detalhes)

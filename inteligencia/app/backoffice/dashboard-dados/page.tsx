@@ -73,7 +73,7 @@ export default async function DashboardDadosPage() {
     { label: "Faturamento 2025 (parcial)", valor: fat2025parcial > 0 ? `R$ ${Math.round(fat2025parcial / 1000)} bi` : `R$ ${(ultimo.valor_mm / 1000).toFixed(0)} bi`, sub: fat2025parcial > 0 ? `Acumulado 12m ate 3T2025` : `+${varAnual}% vs 2023`, cor: "#E8421A" },
     { label: "Crescimento 11 anos", valor: "+108%", sub: "R$ 127 bi (2014) → R$ 265 bi (2024)", cor: "#999" },
     { label: "Empregos diretos", valor: emprego ? `${(emprego.empregos_diretos / 1000000).toFixed(2)} mi` : "1,80 mi", sub: `~${empregosPorUnidade} por unidade`, cor: "#999" },
-    { label: "Franquias no banco", valor: "1.387", sub: "ABF + RankFranchise", cor: "#999" },
+    { label: "Franquias no banco", valor: "1.387", sub: "Mercado Franquia", cor: "#999" },
   ]
 
   return (

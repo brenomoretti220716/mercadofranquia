@@ -84,7 +84,7 @@ export function TabRanking({ ranking, segmentos }: Props) {
       <div className="p-6" style={CARD}>
         <div className="flex items-center justify-between mb-4">
           <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "#999" }}>Maiores redes por numero de unidades — {anoAtivo}</div>
-          <span style={{ fontSize: 10, color: "#BBB" }}>Fonte: ABF + RankFranchise</span>
+          <span style={{ fontSize: 10, color: "#BBB" }}>Fonte: ABF + Mercado Franquia</span>
         </div>
         <div style={{ maxHeight: 600, overflowY: "auto" }}>
           <Table>
@@ -127,7 +127,7 @@ export function TabRanking({ ranking, segmentos }: Props) {
             </TableBody>
           </Table>
         </div>
-        <GraficoRodape fonte="ABF + RankFranchise" periodo={String(anoAtivo)} />
+        <GraficoRodape fonte="ABF + Mercado Franquia" periodo={String(anoAtivo)} />
       </div>
     </>
   )

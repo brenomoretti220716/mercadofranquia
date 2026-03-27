@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from "react"
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
-  BarChart, Bar, Cell,
+  BarChart, Bar, Cell, ReferenceLine,
 } from "recharts"
 import { InsightBox, h, GraficoRodape } from "@/components/insight-box"
 
@@ -63,10 +63,10 @@ function extrairAnoNum(periodo: string): number {
 }
 
 const COMPARATIVOS = [
-  { titulo: "Saude/Beleza vs Farma", codigoPMC: "103155" },
-  { titulo: "Moda vs Tecidos", codigoPMC: "90673" },
-  { titulo: "Alimentacao vs Hiper", codigoPMC: "90672" },
-  { titulo: "Casa vs Moveis/Eletro", codigoPMC: "2759" },
+  { titulo: "Saude/Beleza vs Farma", codigoPMC: "103155", segABF: ["Saúde, Beleza e Bem-Estar"] },
+  { titulo: "Moda vs Tecidos", codigoPMC: "90673", segABF: ["Moda"] },
+  { titulo: "Alimentacao vs Hiper", codigoPMC: "90672", segABF: ["Alimentação", "Alimentação - FS", "Alimentação - CD"] },
+  { titulo: "Casa vs Moveis/Eletro", codigoPMC: "2759", segABF: ["Casa e Construção"] },
 ]
 
 interface Props {
@@ -532,46 +532,92 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
 
       {/* 4. COMPARATIVO PMC */}
       <SectionTitle>Franchising vs Varejo Geral (PMC)</SectionTitle>
-      {(() => {
-        const primeiroPMC = pmcDados.length > 0 ? pmcDados.sort((a: any, b: any) => a.data.localeCompare(b.data))[0]?.data : null
-        const ultimoPMCdata = pmcDados.length > 0 ? pmcDados[pmcDados.length - 1]?.data : null
-        return <InsightBox insights={[
-          `Franquias crescem consistentemente acima do varejo geral em todos os segmentos comparados`,
-          `Periodo dos dados: ${primeiroPMC ? formatMes(primeiroPMC) : "?"} a ${ultimoPMCdata ? formatMes(ultimoPMCdata) : "?"}`,
-        ]} />
-      })()}
-      <div className="grid grid-cols-4 gap-3">
+      <InsightBox insights={[
+        `Comparativo entre o crescimento anual do franchising (ABF) e a variacao do varejo geral (IBGE/PMC) por segmento equivalente`,
+      ]} />
+      <div className="grid grid-cols-2 gap-4">
         {COMPARATIVOS.map((comp) => {
-          const pmcFilt = pmcDados.filter((d: any) => d.codigo_segmento === comp.codigoPMC && d.variacao_mensal != null)
+          // PMC: variação anual (YoY) mensal
+          const pmcFilt = pmcDados
+            .filter((d: any) => d.codigo_segmento === comp.codigoPMC && d.variacao_mensal != null)
             .sort((a: any, b: any) => a.data.localeCompare(b.data))
             .map((d: any) => ({ mes: d.data, pmc: d.variacao_mensal }))
-          const ultimoPMC = pmcFilt[pmcFilt.length - 1]?.pmc ?? 0
-          const step = Math.max(1, Math.floor(pmcFilt.length / 5))
+          const ultimoPMCval = pmcFilt[pmcFilt.length - 1]?.pmc ?? 0
+
+          // ABF: crescimento % anual do segmento (último período completo vs anterior)
+          const abfItems = segmentosAnual
+            .filter((r: any) => comp.segABF.some((s: string) => r.segmento.includes(s)))
+          const abfByAno = new Map<string, number>()
+          for (const r of abfItems) {
+            const ano = extrairAnoLabel(r.periodo)
+            abfByAno.set(ano, (abfByAno.get(ano) || 0) + r.valor_mm)
+          }
+          const abfAnos = [...abfByAno.keys()].sort()
+          let crescABF: number | null = null
+          if (abfAnos.length >= 2) {
+            const penult = abfByAno.get(abfAnos[abfAnos.length - 2])!
+            const ult = abfByAno.get(abfAnos[abfAnos.length - 1])!
+            crescABF = +((ult / penult - 1) * 100).toFixed(1)
+          }
+
+          const diff = crescABF !== null ? +(crescABF - ultimoPMCval).toFixed(1) : null
+          const step = Math.max(1, Math.floor(pmcFilt.length / 6))
           const primMes = pmcFilt[0]?.mes
           const ultMes = pmcFilt[pmcFilt.length - 1]?.mes
+
           return (
-            <div key={comp.codigoPMC} className="p-4" style={CARD}>
+            <div key={comp.codigoPMC} className="p-5" style={CARD}>
               <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>{comp.titulo}</div>
-              <div className="text-xs font-semibold mb-2" style={{ color: COR_VAREJO }}>
-                Varejo {ultimoPMC > 0 ? "+" : ""}{ultimoPMC.toFixed(1)}%
+              <div className="text-xs mb-1" style={{ color: "#BBB" }}>ABF (anual) vs IBGE/PMC (mensal)</div>
+
+              {/* Valores lado a lado */}
+              <div className="flex items-center gap-3 mb-2">
+                {crescABF !== null && (
+                  <span className="text-xs font-bold" style={{ color: COR_PRIMARIA }}>
+                    ABF {crescABF > 0 ? "+" : ""}{crescABF}%
+                  </span>
+                )}
+                <span className="text-xs font-semibold" style={{ color: "#888" }}>
+                  Varejo {ultimoPMCval > 0 ? "+" : ""}{ultimoPMCval.toFixed(1)}%
+                </span>
+                {diff !== null && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5" style={{
+                    borderRadius: 4,
+                    background: diff > 0 ? "#E8F5E9" : "#FFEBEE",
+                    color: diff > 0 ? "#2E7D32" : "#C62828",
+                  }}>
+                    {diff > 0 ? "+" : ""}{diff}pp
+                  </span>
+                )}
               </div>
-              <ResponsiveContainer width="100%" height={90}>
-                <LineChart data={pmcFilt} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+
+              <ResponsiveContainer width="100%" height={120}>
+                <LineChart data={pmcFilt} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F5F5F5" />
                   <XAxis dataKey="mes" tick={{ fontSize: 9, fill: "#ccc" }} tickLine={false} axisLine={false} tickFormatter={formatMes} interval={step} />
-                  <YAxis tick={{ fontSize: 9, fill: "#ccc" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
-                  <Tooltip formatter={(v) => [`${Number(v).toFixed(1)}%`, "PMC"]} labelFormatter={(l) => formatMes(String(l))} contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #eee" }} />
-                  <Line type="monotone" dataKey="pmc" stroke={COR_VAREJO} strokeWidth={1.5} strokeDasharray="6 3" dot={false} />
+                  <YAxis tick={{ fontSize: 9, fill: "#ccc" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} tickFormatter={(v: number) => `${v}%`} />
+                  <ReferenceLine y={0} stroke="#E5E5E5" strokeWidth={1} />
+                  {crescABF !== null && (
+                    <ReferenceLine y={crescABF} stroke={COR_PRIMARIA} strokeWidth={1.5} strokeDasharray="4 2" label={{ value: `ABF ${crescABF}%`, position: "right", fontSize: 9, fill: COR_PRIMARIA }} />
+                  )}
+                  <Tooltip
+                    formatter={(v, name) => [`${Number(v).toFixed(1)}%`, name === "pmc" ? "Varejo PMC" : String(name)]}
+                    labelFormatter={(l) => formatMes(String(l))}
+                    contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #eee" }}
+                  />
+                  <Line type="monotone" dataKey="pmc" stroke="#888" strokeWidth={1.5} dot={false} name="Varejo PMC" />
                 </LineChart>
               </ResponsiveContainer>
-              <div className="flex justify-between" style={{ fontSize: 9, color: "#CCC" }}>
+
+              <div className="flex justify-between mt-1" style={{ fontSize: 9, color: "#CCC" }}>
                 <span>{primMes && ultMes ? `${formatMes(primMes)} — ${formatMes(ultMes)}` : ""}</span>
-                <span>IBGE/PMC</span>
+                <span>— ABF  -- Varejo PMC</span>
               </div>
             </div>
           )
         })}
       </div>
-      <GraficoRodape fonte="ABF + IBGE/PMC" periodo="ultimos 36 meses" />
+      <GraficoRodape fonte="ABF + IBGE/PMC" periodo="ultimos 36 meses" nota="Varejo = var. mensal YoY · ABF = var. anual" />
     </>
   )
 }

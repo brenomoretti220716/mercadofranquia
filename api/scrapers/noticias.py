@@ -1,13 +1,20 @@
 """
-Scraper de notícias sobre franchising de fontes brasileiras e internacionais.
+Scraper de notícias sobre franchising.
+
+Fontes:
+  - ABF (WP REST API)
+  - Portal do Franchising (HTML blog)
+  - Entrepreneur Franchises (RSS)
+  - FranchiseWire (RSS)
 
 Uso:
   python3 api/scrapers/noticias.py                          # todas as fontes
-  python3 api/scrapers/noticias.py --fonte abf --limite 5   # uma fonte, limitado
+  python3 api/scrapers/noticias.py --fonte abf --limite 5   # uma fonte
 """
 
 import argparse
 import html as html_mod
+import json
 import os
 import re
 import ssl
@@ -31,12 +38,15 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
-TIMEOUT = 10
+TIMEOUT = 15
 RATE_LIMIT = 1
 
 
-def _fetch(url):
-    req = Request(url, headers=HEADERS)
+def _fetch(url, accept=None):
+    h = dict(HEADERS)
+    if accept:
+        h["Accept"] = accept
+    req = Request(url, headers=h)
     with urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
         return resp.read().decode("utf-8", errors="ignore")
 
@@ -70,8 +80,7 @@ def _inserir(noticias):
                    VALUES(?,?,?,?,?,?,?,?)""",
                 (n["titulo"], n["url"], n.get("conteudo"), n.get("resumo"), n["fonte"], n.get("url_fonte"), n.get("idioma", "pt"), n.get("data")),
             )
-            if conn.total_changes:
-                inseridos += 1
+            inseridos += 1
         except Exception:
             pass
     conn.commit()
@@ -79,30 +88,83 @@ def _inserir(noticias):
     return inseridos
 
 
-# ── FONTES RSS ──────────────────────────────────────────────────────────────
+# ── ABF via WP REST API ─────────────────────────────────────────────────────
+
+def scrape_abf(limite=20):
+    """ABF noticias via WordPress REST API."""
+    fonte = "ABF Noticias"
+    try:
+        data = _fetch(f"https://www.abf.com.br/wp-json/wp/v2/posts?per_page={limite}&categories=9", accept="application/json")
+        posts = json.loads(data)
+        noticias = []
+        for p in posts:
+            titulo = _clean(p.get("title", {}).get("rendered", ""))
+            link = p.get("link", "")
+            resumo = _clean(p.get("excerpt", {}).get("rendered", ""))
+            conteudo = _clean(p.get("content", {}).get("rendered", ""))
+            data_pub = p.get("date", "")[:10]
+            if titulo and link:
+                noticias.append({
+                    "titulo": titulo, "url": link, "resumo": resumo, "conteudo": conteudo,
+                    "fonte": fonte, "url_fonte": "https://www.abf.com.br/noticias-abf/",
+                    "idioma": "pt", "data": data_pub,
+                })
+        return noticias
+    except Exception as e:
+        print(f"  [ERRO] {fonte}: {e}")
+        return []
+
+
+# ── Portal do Franchising (HTML blog) ────────────────────────────────────────
+
+def scrape_portal(limite=20):
+    """Portal do Franchising — artigos do blog."""
+    fonte = "Portal do Franchising"
+    try:
+        html = _fetch("https://www.portaldofranchising.com.br/franquias/")
+        h = html_mod.unescape(html)
+        links = re.findall(
+            r'<a[^>]*href="(https://www\.portaldofranchising\.com\.br/(?:franquias|falando-de-franquias)/[^"/]+/)"[^>]*>([^<]{20,100})',
+            h,
+        )
+        seen = set()
+        noticias = []
+        for url, titulo in links:
+            titulo = titulo.strip()
+            if url in seen or len(titulo) < 20:
+                continue
+            seen.add(url)
+            noticias.append({
+                "titulo": titulo, "url": url, "fonte": fonte,
+                "url_fonte": "https://www.portaldofranchising.com.br/franquias/",
+                "idioma": "pt",
+            })
+            if len(noticias) >= limite:
+                break
+        return noticias
+    except Exception as e:
+        print(f"  [ERRO] {fonte}: {e}")
+        return []
+
+
+# ── RSS genérico ─────────────────────────────────────────────────────────────
 
 def parse_rss(url, fonte, idioma="en", limite=20):
-    """Parse RSS feed genérico."""
+    """Parse RSS feed."""
     try:
-        xml = _fetch(url)
+        xml = _fetch(url, accept="application/xml,text/xml,application/rss+xml")
         root = ET.fromstring(xml)
         items = root.findall(".//item")[:limite]
         noticias = []
         for item in items:
-            titulo = item.findtext("title", "").strip()
-            link = item.findtext("link", "").strip()
-            desc = _clean(item.findtext("description", ""))
-            pub_date = item.findtext("pubDate", "")
+            titulo = (item.findtext("title") or "").strip()
+            link = (item.findtext("link") or "").strip()
+            desc = _clean(item.findtext("description") or "")
+            pub = (item.findtext("pubDate") or "")[:30]
             if titulo and link:
                 noticias.append({
-                    "titulo": titulo,
-                    "url": link,
-                    "resumo": desc[:300],
-                    "conteudo": desc,
-                    "fonte": fonte,
-                    "url_fonte": url,
-                    "idioma": idioma,
-                    "data": pub_date[:30] if pub_date else None,
+                    "titulo": titulo, "url": link, "resumo": desc[:300], "conteudo": desc,
+                    "fonte": fonte, "url_fonte": url, "idioma": idioma, "data": pub or None,
                 })
         return noticias
     except Exception as e:
@@ -110,73 +172,13 @@ def parse_rss(url, fonte, idioma="en", limite=20):
         return []
 
 
-# ── FONTES HTML BRASILEIRAS ─────────────────────────────────────────────────
-
-def scrape_html_generic(url, fonte, pattern_title, pattern_link, base_url="", limite=20):
-    """Scrape genérico de HTML usando regex."""
-    try:
-        html = _fetch(url)
-        h = html_mod.unescape(html)
-        noticias = []
-
-        titles = re.findall(pattern_title, h, re.DOTALL | re.IGNORECASE)
-        links = re.findall(pattern_link, h, re.DOTALL | re.IGNORECASE)
-
-        for i in range(min(len(titles), len(links), limite)):
-            titulo = _clean(titles[i])
-            link = links[i].strip()
-            if not link.startswith("http"):
-                link = base_url + link
-            if titulo and link and len(titulo) > 10:
-                noticias.append({
-                    "titulo": titulo,
-                    "url": link,
-                    "fonte": fonte,
-                    "url_fonte": url,
-                    "idioma": "pt",
-                })
-        return noticias
-    except Exception as e:
-        print(f"  [ERRO HTML] {fonte}: {e}")
-        return []
-
-
-# ── DEFINIÇÃO DAS FONTES ────────────────────────────────────────────────────
+# ── FONTES ───────────────────────────────────────────────────────────────────
 
 FONTES = {
-    "abf": {
-        "nome": "ABF Noticias",
-        "tipo": "html",
-        "url": "https://www.abf.com.br/noticias-abf/",
-        "pattern_title": r'<h[23][^>]*class="[^"]*entry-title[^"]*"[^>]*>\s*<a[^>]*>(.*?)</a>',
-        "pattern_link": r'<h[23][^>]*class="[^"]*entry-title[^"]*"[^>]*>\s*<a[^>]*href="([^"]+)"',
-    },
-    "portal_franchising": {
-        "nome": "Portal do Franchising",
-        "tipo": "html",
-        "url": "https://www.portaldofranchising.com.br/noticias/",
-        "pattern_title": r'<h[234][^>]*>\s*<a[^>]*>(.*?)</a>',
-        "pattern_link": r'<h[234][^>]*>\s*<a[^>]*href="([^"]+)"',
-        "base_url": "https://www.portaldofranchising.com.br",
-    },
-    "franchise_times": {
-        "nome": "Franchise Times",
-        "tipo": "rss",
-        "url": "https://www.franchisetimes.com/feed/",
-        "idioma": "en",
-    },
-    "entrepreneur": {
-        "nome": "Entrepreneur Franchises",
-        "tipo": "rss",
-        "url": "https://www.entrepreneur.com/topic/franchises/feed",
-        "idioma": "en",
-    },
-    "franchisewire": {
-        "nome": "FranchiseWire",
-        "tipo": "rss",
-        "url": "https://www.franchisewire.com/feed/",
-        "idioma": "en",
-    },
+    "abf": {"nome": "ABF Noticias", "fn": scrape_abf},
+    "portal": {"nome": "Portal do Franchising", "fn": scrape_portal},
+    "entrepreneur": {"nome": "Entrepreneur Franchises", "fn": lambda l: parse_rss("https://www.entrepreneur.com/topic/franchises/feed", "Entrepreneur", "en", l)},
+    "franchisewire": {"nome": "FranchiseWire", "fn": lambda l: parse_rss("https://www.franchisewire.com/feed/", "FranchiseWire", "en", l)},
 }
 
 
@@ -188,26 +190,12 @@ def coletar(fontes_filter=None, limite=20):
     init_db()
     total = 0
 
-    fontes_to_use = {}
-    if fontes_filter:
-        for f in fontes_filter:
-            if f in FONTES:
-                fontes_to_use[f] = FONTES[f]
-    else:
-        fontes_to_use = FONTES
+    to_use = {k: v for k, v in FONTES.items() if not fontes_filter or k in fontes_filter}
 
-    for key, cfg in fontes_to_use.items():
+    for key, cfg in to_use.items():
         print(f"[{cfg['nome']}]")
         try:
-            if cfg["tipo"] == "rss":
-                noticias = parse_rss(cfg["url"], cfg["nome"], cfg.get("idioma", "en"), limite)
-            else:
-                noticias = scrape_html_generic(
-                    cfg["url"], cfg["nome"],
-                    cfg["pattern_title"], cfg["pattern_link"],
-                    cfg.get("base_url", ""), limite,
-                )
-
+            noticias = cfg["fn"](limite)
             if noticias:
                 inseridos = _inserir(noticias)
                 total += inseridos
@@ -216,11 +204,9 @@ def coletar(fontes_filter=None, limite=20):
             else:
                 _log_sync(f"Noticias/{cfg['nome']}", "ok", 0)
                 print(f"  Nenhuma noticia encontrada")
-
         except Exception as e:
             _log_sync(f"Noticias/{cfg['nome']}", "erro", 0, str(e)[:200])
             print(f"  ERRO: {e}")
-
         time.sleep(RATE_LIMIT)
 
     print(f"\n{'='*60}")
@@ -231,9 +217,8 @@ def coletar(fontes_filter=None, limite=20):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Scraper de noticias franchising")
-    parser.add_argument("--fonte", type=str, help="Chave da fonte (ex: abf, franchise_times)")
+    parser.add_argument("--fonte", type=str, help="Chave da fonte (ex: abf, portal)")
     parser.add_argument("--limite", type=int, default=20, help="Limite por fonte")
     args = parser.parse_args()
-
     fontes = [args.fonte] if args.fonte else None
     coletar(fontes_filter=fontes, limite=args.limite)

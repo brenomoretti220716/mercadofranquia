@@ -207,6 +207,11 @@ def init_db():
         tags            TEXT,
         relevancia      INTEGER DEFAULT 5,
         status          TEXT DEFAULT 'pendente',
+        status_editorial TEXT DEFAULT 'rascunho',
+        titulos_sugeridos TEXT,
+        titulo_escolhido TEXT,
+        instrucao_refazer TEXT,
+        versao          INTEGER DEFAULT 1,
         criado_por      TEXT DEFAULT 'ia',
         created_at      TEXT DEFAULT (datetime('now'))
     );

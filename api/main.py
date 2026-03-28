@@ -786,6 +786,136 @@ def rejeitar_noticia(fila_id: int):
     return {"status": "ok"}
 
 
+# ── EDITORIAL ────────────────────────────────────────────────────────────
+
+@app.get("/api/editorial/fila")
+def get_editorial_fila(status: str = "revisao"):
+    conn = get_conn()
+    rows = conn.execute(
+        """SELECT f.*, r.url as url_original, r.fonte as fonte_original
+           FROM noticias_fila f LEFT JOIN noticias_raw r ON f.raw_id = r.id
+           WHERE f.status_editorial = ? ORDER BY f.relevancia DESC, f.created_at DESC""",
+        (status,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+@app.get("/api/editorial/stats")
+def get_editorial_stats():
+    conn = get_conn()
+    result = {}
+    for s in ["rascunho", "revisao", "aprovado", "publicado", "rejeitado"]:
+        result[s] = conn.execute("SELECT COUNT(*) FROM noticias_fila WHERE status_editorial = ?", (s,)).fetchone()[0]
+    conn.close()
+    return result
+
+
+@app.post("/api/editorial/{fila_id}/aprovar")
+def editorial_aprovar(fila_id: int, payload: dict = {}):
+    conn = get_conn()
+    titulo = payload.get("titulo_escolhido")
+    if titulo:
+        conn.execute("UPDATE noticias_fila SET titulo_escolhido = ?, status_editorial = 'aprovado' WHERE id = ?", (titulo, fila_id))
+    else:
+        conn.execute("UPDATE noticias_fila SET status_editorial = 'aprovado' WHERE id = ?", (fila_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
+@app.post("/api/editorial/{fila_id}/publicar")
+def editorial_publicar(fila_id: int):
+    conn = get_conn()
+    fila = conn.execute("SELECT * FROM noticias_fila WHERE id = ?", (fila_id,)).fetchone()
+    if not fila:
+        conn.close()
+        raise HTTPException(404, "Noticia nao encontrada")
+    titulo = fila["titulo_escolhido"] or fila["titulo_gerado"] or ""
+    slug = re.sub(r"[^a-z0-9]+", "-", titulo.lower()).strip("-")[:80]
+    slug = f"{slug}-{fila_id}"
+    conn.execute(
+        "INSERT INTO noticias_publicadas(fila_id, titulo, conteudo, resumo, slug, segmento, tags) VALUES(?,?,?,?,?,?,?)",
+        (fila_id, titulo, fila["conteudo_gerado"], fila["resumo"], slug, fila["segmento"], fila["tags"]),
+    )
+    conn.execute("UPDATE noticias_fila SET status_editorial = 'publicado', status = 'publicado' WHERE id = ?", (fila_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok", "slug": slug}
+
+
+@app.post("/api/editorial/{fila_id}/rejeitar")
+def editorial_rejeitar(fila_id: int):
+    conn = get_conn()
+    conn.execute("UPDATE noticias_fila SET status_editorial = 'rejeitado' WHERE id = ?", (fila_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
+@app.post("/api/editorial/{fila_id}/escolher-titulo")
+def editorial_escolher_titulo(fila_id: int, payload: dict):
+    conn = get_conn()
+    conn.execute("UPDATE noticias_fila SET titulo_escolhido = ? WHERE id = ?", (payload.get("titulo", ""), fila_id))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
+@app.put("/api/editorial/{fila_id}/editar")
+def editorial_editar(fila_id: int, payload: dict):
+    conn = get_conn()
+    sets, params = [], []
+    for campo in ["titulo_gerado", "conteudo_gerado", "meta_description", "titulo_escolhido"]:
+        if campo in payload:
+            sets.append(f"{campo} = ?")
+            params.append(payload[campo])
+    if sets:
+        params.append(fila_id)
+        conn.execute(f"UPDATE noticias_fila SET {', '.join(sets)} WHERE id = ?", params)
+        conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
+# ── STUDIO SOCIAL ────────────────────────────────────────────────────────
+
+@app.post("/api/studio/cards/{post_id}/aprovar")
+def studio_card_aprovar(post_id: int):
+    conn = get_conn()
+    conn.execute("UPDATE posts_instagram SET status = 'aprovado', status_editorial = 'aprovado' WHERE id = ?", (post_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
+@app.post("/api/studio/cards/{post_id}/rejeitar")
+def studio_card_rejeitar(post_id: int):
+    conn = get_conn()
+    conn.execute("UPDATE posts_instagram SET status_editorial = 'rejeitado' WHERE id = ?", (post_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
+@app.post("/api/studio/carrosseis/{carrossel_id}/aprovar")
+def studio_carrossel_aprovar(carrossel_id: int):
+    conn = get_conn()
+    conn.execute("UPDATE carrosseis_instagram SET status = 'aprovado', status_editorial = 'aprovado' WHERE id = ?", (carrossel_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
+@app.post("/api/studio/carrosseis/{carrossel_id}/rejeitar")
+def studio_carrossel_rejeitar(carrossel_id: int):
+    conn = get_conn()
+    conn.execute("UPDATE carrosseis_instagram SET status_editorial = 'rejeitado' WHERE id = ?", (carrossel_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
 # ── INSTAGRAM ────────────────────────────────────────────────────────────
 
 @app.get("/api/instagram/posts")

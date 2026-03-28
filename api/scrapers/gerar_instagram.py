@@ -56,38 +56,68 @@ Exemplos de boas legendas:
 
 Retorne: {"posts": [...]}"""
 
+# Logo em base64 (carregada uma vez)
+import base64
+_logo_path = Path(__file__).parent.parent / "static" / "logo_mercado_franquia.png"
+_LOGO_B64 = ""
+if _logo_path.exists():
+    _LOGO_B64 = base64.b64encode(_logo_path.read_bytes()).decode()
+
+_FONTS = '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">'
+_LOGO_IMG = f'<img src="data:image/png;base64,{_LOGO_B64}" style="width:140px">' if _LOGO_B64 else '<div style="color:#666;font-size:16px;text-transform:uppercase;letter-spacing:4px">Mercado Franquia</div>'
+
+_BASE = f"""<html><head>{_FONTS}</head><body style="margin:0;padding:0">
+<div style="width:1080px;height:1080px;background:linear-gradient(135deg,#0D0D0D 0%,#1A1A18 100%);position:relative;font-family:'Inter',system-ui,sans-serif;box-sizing:border-box;overflow:hidden">
+<!-- Logo -->
+<div style="position:absolute;top:50px;left:60px">{_LOGO_IMG}</div>
+<div style="position:absolute;top:110px;left:60px;right:60px;height:1px;background:linear-gradient(90deg,#E8421A 0%,transparent 100%)"></div>
+<!-- Content -->
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:160px 80px 100px;box-sizing:border-box">
+{{content}}
+</div>
+<!-- Bottom bar -->
+<div style="position:absolute;bottom:0;left:0;right:0;height:8px;background:#E8421A"></div>
+<div style="position:absolute;bottom:20px;right:60px;color:#444;font-size:14px;font-family:'Inter'">mercadofranquia.com.br</div>
+</div></body></html>"""
+
+
+def _card(content_html):
+    return _BASE.replace("{{content}}", content_html)
+
 
 CARD_TEMPLATES = {
-    "dado_principal": """<div style="width:1080px;height:1080px;background:linear-gradient(180deg,#0D0D0D 0%,#1A1A1A 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui;padding:80px;box-sizing:border-box">
-<div style="color:#666;font-size:16px;text-transform:uppercase;letter-spacing:4px;margin-bottom:60px">Mercado Franquia</div>
-<div style="color:#E8421A;font-size:90px;font-weight:800;text-align:center;line-height:1.1">{dado}</div>
-<div style="color:#CCC;font-size:26px;margin-top:30px;text-align:center">{subtexto}</div>
-<div style="position:absolute;bottom:0;left:0;right:0;height:6px;background:#E8421A"></div>
-</div>""",
+    "dado_principal": lambda dado, sub: _card(f"""
+<div style="color:#E8421A;font-size:100px;font-weight:700;text-align:center;line-height:1.1;font-family:'Space Grotesk','Inter',sans-serif">{dado}</div>
+<div style="color:#CCC;font-size:28px;margin-top:35px;text-align:center;line-height:1.4;max-width:800px">{sub}</div>
+"""),
 
-    "citacao": """<div style="width:1080px;height:1080px;background:linear-gradient(180deg,#0D0D0D 0%,#1A1A1A 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui;padding:80px;box-sizing:border-box">
-<div style="color:#666;font-size:16px;text-transform:uppercase;letter-spacing:4px;margin-bottom:40px">Mercado Franquia</div>
-<div style="color:#E8421A;font-size:120px;line-height:0.6;margin-bottom:20px">"</div>
-<div style="color:#FFF;font-size:32px;text-align:center;line-height:1.4;max-width:800px;font-style:italic">{dado}</div>
-<div style="color:#888;font-size:20px;margin-top:30px">{subtexto}</div>
-<div style="position:absolute;bottom:0;left:0;right:0;height:6px;background:#E8421A"></div>
-</div>""",
+    "citacao": lambda dado, sub: _card(f"""
+<div style="position:absolute;top:140px;left:50px;color:#E8421A;font-size:180px;opacity:0.15;font-family:serif;line-height:0.6">\u201C</div>
+<div style="color:#FFF;font-size:34px;text-align:center;line-height:1.5;max-width:800px;font-style:italic;font-weight:400">{dado}</div>
+<div style="color:#E8421A;font-size:20px;margin-top:35px;font-weight:600">{sub}</div>
+"""),
 
-    "pergunta": """<div style="width:1080px;height:1080px;background:linear-gradient(180deg,#0D0D0D 0%,#1A1A1A 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui;padding:80px;box-sizing:border-box">
-<div style="color:#666;font-size:16px;text-transform:uppercase;letter-spacing:4px;margin-bottom:40px">Mercado Franquia</div>
-<div style="color:#E8421A;font-size:100px;font-weight:800;margin-bottom:20px">?</div>
-<div style="color:#FFF;font-size:36px;text-align:center;line-height:1.3;max-width:800px;font-weight:600">{dado}</div>
-<div style="color:#888;font-size:22px;margin-top:30px;text-align:center">{subtexto}</div>
-<div style="position:absolute;bottom:0;left:0;right:0;height:6px;background:#E8421A"></div>
-</div>""",
+    "pergunta": lambda dado, sub: _card(f"""
+<div style="position:absolute;top:200px;right:80px;color:#E8421A;font-size:220px;opacity:0.1;font-weight:800;font-family:'Space Grotesk'">?</div>
+<div style="color:#FFF;font-size:38px;text-align:center;line-height:1.4;max-width:800px;font-weight:700">{dado}</div>
+<div style="color:#999;font-size:24px;margin-top:35px;text-align:center;line-height:1.4">{sub}</div>
+<div style="color:#E8421A;font-size:20px;margin-top:25px;font-weight:600">Comente sua opiniao ↓</div>
+"""),
 
-    "chart": """<div style="width:1080px;height:1080px;background:linear-gradient(180deg,#0D0D0D 0%,#1A1A1A 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui;padding:80px;box-sizing:border-box">
-<div style="color:#666;font-size:16px;text-transform:uppercase;letter-spacing:4px;margin-bottom:60px">Mercado Franquia</div>
-<div style="color:#E8421A;font-size:60px;font-weight:800;text-align:center">{dado}</div>
-<div style="width:600px;height:8px;background:#333;border-radius:4px;margin:30px 0"><div style="width:70%;height:100%;background:#E8421A;border-radius:4px"></div></div>
-<div style="color:#888;font-size:28px;text-align:center">{subtexto}</div>
-<div style="position:absolute;bottom:0;left:0;right:0;height:6px;background:#E8421A"></div>
-</div>""",
+    "chart": lambda dado, sub: _card(f"""
+<div style="color:#E8421A;font-size:64px;font-weight:700;text-align:center;font-family:'Space Grotesk','Inter',sans-serif">{dado}</div>
+<div style="width:650px;margin:35px 0">
+  <div style="display:flex;align-items:center;gap:15px;margin-bottom:12px">
+    <div style="color:#CCC;font-size:16px;width:120px;text-align:right">Franchising</div>
+    <div style="flex:1;height:12px;background:#333;border-radius:6px"><div style="width:75%;height:100%;background:#E8421A;border-radius:6px"></div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:15px">
+    <div style="color:#666;font-size:16px;width:120px;text-align:right">Comparativo</div>
+    <div style="flex:1;height:12px;background:#333;border-radius:6px"><div style="width:35%;height:100%;background:#444;border-radius:6px"></div></div>
+  </div>
+</div>
+<div style="color:#888;font-size:26px;text-align:center">{sub}</div>
+"""),
 }
 
 
@@ -161,8 +191,8 @@ def gerar_posts(limite=5):
                 tipo = p.get("tipo", "dado_principal")
                 dado = p.get("dado_destaque", "")
                 sub = p.get("subtexto", "")
-                template = CARD_TEMPLATES.get(tipo, CARD_TEMPLATES["dado_principal"])
-                card_html = template.replace("{dado}", dado).replace("{subtexto}", sub)
+                template_fn = CARD_TEMPLATES.get(tipo, CARD_TEMPLATES["dado_principal"])
+                card_html = template_fn(dado, sub)
 
                 conn.execute(
                     """INSERT INTO posts_instagram(noticia_id, tipo, legenda, hashtags, dado_destaque, subtexto, card_html, status)

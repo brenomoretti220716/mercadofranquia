@@ -40,9 +40,10 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 _static = Path(__file__).parent.parent / "static"
 _LOGO_B64 = (_static / "logo_base64.txt").read_text() if (_static / "logo_base64.txt").exists() else ""
 _LOGO_CLARA_B64 = (_static / "logo_clara_base64.txt").read_text() if (_static / "logo_clara_base64.txt").exists() else _LOGO_B64
+_LOGO_BRANCA_B64 = (_static / "logo_branca_base64.txt").read_text() if (_static / "logo_branca_base64.txt").exists() else _LOGO_B64
 
 _LOGO_ESCURA = f'<img src="data:image/png;base64,{_LOGO_B64}" style="width:160px">' if _LOGO_B64 else '<div style="color:#FFF;font-size:18px;font-weight:700">MERCADO FRANQUIA</div>'
-_LOGO_ESCURA_BIG = f'<img src="data:image/png;base64,{_LOGO_B64}" style="width:220px">' if _LOGO_B64 else '<div style="color:#FFF;font-size:24px;font-weight:700">MERCADO FRANQUIA</div>'
+_LOGO_BRANCA_BIG = f'<img src="data:image/png;base64,{_LOGO_BRANCA_B64}" style="width:220px">' if _LOGO_BRANCA_B64 else '<div style="color:#FFF;font-size:24px;font-weight:700">MERCADO FRANQUIA</div>'
 _LOGO_CLARA = f'<img src="data:image/png;base64,{_LOGO_CLARA_B64}" style="width:160px">' if _LOGO_CLARA_B64 else '<div style="color:#0D0D0D;font-size:18px;font-weight:700">MERCADO FRANQUIA</div>'
 _FONTS = '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">'
 
@@ -74,7 +75,7 @@ _DESIGN_B = f"""<html><head>{_FONTS}</head><body style="margin:0">
 
 _DESIGN_C = f"""<html><head>{_FONTS}</head><body style="margin:0">
 <div style="width:1080px;height:1080px;background:#E8421A;position:relative;font-family:'Inter',sans-serif;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center">
-<div style="margin-bottom:40px">{_LOGO_ESCURA_BIG}</div>
+<div style="margin-bottom:40px">{_LOGO_BRANCA_BIG}</div>
 <div style="color:#FFF;font-size:52px;font-weight:800;text-align:center;margin-bottom:20px">Salve este post</div>
 <div style="color:rgba(255,255,255,0.9);font-size:36px;text-align:center">↓</div>
 <div style="position:absolute;bottom:40px;color:rgba(255,255,255,0.7);font-size:22px">mercadofranquia.com.br</div>

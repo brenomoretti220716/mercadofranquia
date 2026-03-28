@@ -43,6 +43,10 @@ if _logo_path.exists():
     _LOGO_B64 = base64.b64encode(_logo_path.read_bytes()).decode()
 _LOGO_WHITE = f'<img src="data:image/png;base64,{_LOGO_B64}" style="width:140px">' if _LOGO_B64 else '<div style="color:#FFF;font-size:18px;font-weight:700;letter-spacing:2px">MERCADO FRANQUIA</div>'
 _LOGO_WHITE_BIG = f'<img src="data:image/png;base64,{_LOGO_B64}" style="width:200px">' if _LOGO_B64 else '<div style="color:#FFF;font-size:24px;font-weight:700;letter-spacing:3px">MERCADO FRANQUIA</div>'
+
+_logo_dark_path = Path(__file__).parent.parent / "static" / "logo_dark_base64.txt"
+_LOGO_DARK_B64 = _logo_dark_path.read_text() if _logo_dark_path.exists() else _LOGO_B64
+_LOGO_DARK = f'<img src="data:image/png;base64,{_LOGO_DARK_B64}" style="width:140px">' if _LOGO_DARK_B64 else '<div style="color:#0D0D0D;font-size:18px;font-weight:700;letter-spacing:2px">MERCADO FRANQUIA</div>'
 _FONTS = '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">'
 
 # ── SLIDE TEMPLATES ──────────────────────────────────────────────────────────
@@ -63,7 +67,8 @@ _DESIGN_A = f"""<html><head>{_FONTS}</head><body style="margin:0">
 _DESIGN_B = f"""<html><head>{_FONTS}</head><body style="margin:0">
 <div style="width:1080px;height:1080px;background:#FAFAF8;position:relative;font-family:'Inter',sans-serif;box-sizing:border-box;overflow:hidden">
 <div style="position:absolute;top:0;left:0;right:0;height:8px;background:#E8421A"></div>
-<div style="display:flex;flex-direction:column;padding:60px;box-sizing:border-box;height:100%">
+<div style="position:absolute;top:30px;right:40px">{_LOGO_DARK}</div>
+<div style="display:flex;flex-direction:column;padding:60px;padding-top:50px;box-sizing:border-box;height:100%">
 {_PH}
 </div>
 <div style="position:absolute;bottom:20px;left:40px;color:#CCC;font-size:16px">___SLIDE_NUM___</div>

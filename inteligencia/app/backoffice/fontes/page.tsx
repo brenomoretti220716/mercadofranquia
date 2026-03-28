@@ -1,169 +1,249 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-const CARD_STYLE = { background: "#fff", border: "0.5px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }
-const COR_PRIMARIA = "#1D9E75"
+const P = "#E8421A"
+const CARD_STYLE = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 
-interface FonteConfig {
-  id: string
-  nome: string
-  tipo: "manual" | "api"
+function StatusBadge({ status, lastSync }: { status: string; lastSync: string | null }) {
+  const now = Date.now()
+  const syncDate = lastSync ? new Date(lastSync).getTime() : 0
+  const daysSince = lastSync ? Math.floor((now - syncDate) / 86400000) : 999
+
+  let cor = "#0F6E56"
+  let bg = "#E8F5E9"
+  let label = "OK"
+
+  if (status === "erro") {
+    cor = "#A32D2D"; bg = "#FFEBEE"; label = "ERRO"
+  } else if (status === "nunca" || daysSince > 7) {
+    cor = "#854F0B"; bg = "#FFF8E1"; label = daysSince > 999 ? "NUNCA" : `${daysSince}d atras`
+  }
+
+  return <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: bg, color: cor }}>{label}</span>
 }
 
-const FONTES: FonteConfig[] = [
-  { id: "abf", nome: "ABF (Relatorios)", tipo: "manual" },
-  { id: "bcb_selic", nome: "BCB / Selic", tipo: "api" },
-  { id: "bcb_ipca", nome: "BCB / IPCA", tipo: "api" },
-  { id: "bcb_cambio", nome: "BCB / Cambio", tipo: "api" },
-  { id: "bcb_pib", nome: "BCB / PIB", tipo: "api" },
-  { id: "bcb_desemprego", nome: "BCB / Desemprego", tipo: "api" },
-  { id: "bcb_icc", nome: "BCB / ICC", tipo: "api" },
-  { id: "bcb_ice", nome: "BCB / ICE", tipo: "api" },
-  { id: "bcb_endividamento", nome: "BCB / Endividamento", tipo: "api" },
-  { id: "bcb_massa_salarial", nome: "BCB / Massa salarial", tipo: "api" },
-  { id: "ibge_pib_estados", nome: "IBGE / PIB estados", tipo: "api" },
-  { id: "ibge_pmc", nome: "IBGE / PMC", tipo: "api" },
-  { id: "caged", nome: "CAGED", tipo: "api" },
-]
-
-interface SyncInfo {
-  fonte: string
-  status: string
-  registros_inseridos: number
-  erro: string | null
-  created_at: string
+function SectionHeader({ titulo, icon, total, open, onClick }: { titulo: string; icon: string; total: number; open: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex items-center justify-between w-full p-4 mb-1 transition-all" style={{ ...CARD_STYLE, border: "1px solid #F0F0F0" }}>
+      <div className="flex items-center gap-3">
+        <span style={{ fontSize: 20 }}>{icon}</span>
+        <span className="font-semibold" style={{ fontSize: 15, color: "#1A1A1A" }}>{titulo}</span>
+        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#FFF0ED", color: P }}>{total}</span>
+      </div>
+      <span style={{ color: "#999", fontSize: 12 }}>{open ? "▼" : "▶"}</span>
+    </button>
+  )
 }
 
-interface StatsInfo {
-  tabela: string
-  registros: number
+interface FontesData {
+  macro: any[]
+  abf: any[]
+  franquias: any[]
+  noticias: any[]
 }
 
 export default function FontesPage() {
-  const [syncData, setSyncData] = useState<SyncInfo[]>([])
-  const [stats, setStats] = useState<StatsInfo[]>([])
+  const [data, setData] = useState<FontesData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [syncing, setSyncing] = useState(false)
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set(["macro", "noticias"]))
+  const [syncing, setSyncing] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true)
-      try {
-        const [syncRes, statsRes] = await Promise.all([
-          fetch(`${API_URL}/api/sync/status`).then((r) => r.ok ? r.json() : []),
-          fetch(`${API_URL}/api/backoffice/stats`).then((r) => r.ok ? r.json() : []),
-        ])
-        setSyncData(syncRes)
-        setStats(statsRes)
-      } catch {
-        // API offline
-      }
-      setLoading(false)
-    }
-    load()
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_URL}/api/fontes/status`)
+      if (res.ok) setData(await res.json())
+    } catch {}
+    setLoading(false)
   }, [])
 
-  async function sincronizar() {
-    setSyncing(true)
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const toggle = (id: string) => {
+    setOpenSections((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
+
+  async function sync(tipo: string) {
+    setSyncing(tipo)
     try {
-      const res = await fetch(`${API_URL}/api/sync/status`)
-      if (res.ok) setSyncData(await res.json())
-    } catch {
-      // silencioso
-    }
-    setSyncing(false)
+      await fetch(`${API_URL}/api/fontes/sync/${tipo}`, { method: "POST" })
+    } catch {}
+    setTimeout(() => { setSyncing(null); fetchData() }, 3000)
   }
 
-  function getSyncInfo(fonteId: string) {
-    const normalizado = fonteId.replace(/_/g, " ").toLowerCase()
-    return syncData.find((s) => s.fonte.toLowerCase().includes(normalizado.split("_").pop() || ""))
-  }
-
-  function getRegistros(fonteId: string) {
-    const map: Record<string, string> = {
-      abf: "relatorios",
-      bcb_selic: "macro_bcb", bcb_ipca: "macro_bcb", bcb_cambio: "macro_bcb",
-      bcb_pib: "macro_bcb", bcb_desemprego: "macro_bcb", bcb_icc: "macro_bcb",
-      bcb_ice: "macro_bcb", bcb_endividamento: "macro_bcb", bcb_massa_salarial: "macro_bcb",
-      ibge_pib_estados: "macro_ibge", ibge_pmc: "pmc_ibge",
-      caged: "caged_bcb",
-    }
-    const tabela = map[fonteId]
-    const stat = stats.find((s) => s.tabela === tabela)
-    return stat?.registros ?? null
-  }
+  const totalFontes = data ? data.macro.length + data.abf.length + data.franquias.length + data.noticias.length : 0
 
   return (
     <>
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-medium" style={{ color: "#1a1a18" }}>Fontes de Dados</h1>
-          <p className="text-sm mt-1" style={{ color: "#888" }}>Status de cada fonte integrada ao sistema</p>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-medium" style={{ color: "#1a1a18" }}>Central de Fontes</h1>
+          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full" style={{ background: "#FFF0ED", color: P }}>{totalFontes} fontes</span>
         </div>
-        <button
-          onClick={sincronizar}
-          disabled={syncing}
-          className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity"
-          style={{ background: COR_PRIMARIA, opacity: syncing ? 0.6 : 1 }}
-        >
-          {syncing ? "Verificando..." : "Sincronizar tudo"}
+        <button onClick={fetchData} className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ border: "1px solid #E5E5E5", color: "#666" }}>
+          Verificar todas
         </button>
       </div>
 
       {loading ? (
         <p className="text-center py-12" style={{ color: "#bbb" }}>Carregando...</p>
-      ) : (
-        <div className="grid grid-cols-3 gap-3">
-          {FONTES.map((fonte) => {
-            const sync = getSyncInfo(fonte.id)
-            const registros = getRegistros(fonte.id)
-            const isOk = !sync || sync.status === "ok"
-            const lastSync = sync?.created_at ? new Date(sync.created_at).toLocaleDateString("pt-BR") : null
+      ) : data && (
+        <>
+          {/* MACRO BCB/IBGE */}
+          <SectionHeader titulo="Dados Macroeconomicos" icon="🏦" total={data.macro.length} open={openSections.has("macro")} onClick={() => toggle("macro")} />
+          {openSections.has("macro") && (
+            <Card className="border-0 shadow-none mb-4" style={CARD_STYLE}>
+              <CardContent className="p-0">
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #F0F0F0" }}>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Status</th>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Fonte</th>
+                      <th className="text-right font-semibold py-2 px-4" style={{ color: "#999" }}>Registros</th>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Ultimo dado</th>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Ultima sync</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.macro.map((f: any) => (
+                      <tr key={f.nome} style={{ borderBottom: "1px solid #F8F8F8" }}>
+                        <td className="py-2 px-4"><StatusBadge status={f.sync_status} lastSync={f.ultima_sync} /></td>
+                        <td className="py-2 px-4 font-medium" style={{ color: "#1A1A1A" }}>{f.nome}</td>
+                        <td className="text-right py-2 px-4" style={{ color: "#666" }}>{f.total?.toLocaleString("pt-BR")}</td>
+                        <td className="py-2 px-4" style={{ color: "#999" }}>{f.ultimo_registro || "—"}</td>
+                        <td className="py-2 px-4" style={{ color: "#999" }}>{f.ultima_sync ? new Date(f.ultima_sync).toLocaleDateString("pt-BR") : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="p-3 text-right" style={{ borderTop: "1px solid #F0F0F0" }}>
+                  <button onClick={() => sync("macro")} disabled={syncing === "macro"} className="text-xs font-semibold px-3 py-1.5 rounded text-white" style={{ background: syncing === "macro" ? "#999" : P }}>
+                    {syncing === "macro" ? "Sincronizando..." : "Sincronizar agora"}
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-            return (
-              <Card key={fonte.id} className="border-0 shadow-none" style={CARD_STYLE}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium" style={{ color: "#1a1a18" }}>{fonte.nome}</span>
-                    <span
-                      className="text-[10px] font-medium rounded-full px-2.5 py-0.5"
-                      style={{
-                        background: isOk ? "#E1F5EE" : "#FCEBEB",
-                        color: isOk ? "#0F6E56" : "#A32D2D",
-                      }}
-                    >
-                      {isOk ? "OK" : "ERRO"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex justify-between">
-                      <span className="text-[10px] uppercase tracking-wider" style={{ color: "#bbb" }}>Tipo</span>
-                      <span className="text-xs" style={{ color: "#888" }}>{fonte.tipo === "manual" ? "Upload manual" : "API automatica"}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[10px] uppercase tracking-wider" style={{ color: "#bbb" }}>Ultimo sync</span>
-                      <span className="text-xs" style={{ color: "#888" }}>{lastSync ?? "—"}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[10px] uppercase tracking-wider" style={{ color: "#bbb" }}>Registros</span>
-                      <span className="text-xs font-medium" style={{ color: "#1a1a18" }}>
-                        {registros != null ? registros.toLocaleString("pt-BR") : "—"}
-                      </span>
-                    </div>
-                    {sync?.erro && (
-                      <div className="text-[10px] mt-1 p-2 rounded" style={{ background: "#FCEBEB", color: "#A32D2D" }}>
-                        {sync.erro}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+          {/* RELATÓRIOS ABF */}
+          <SectionHeader titulo="Relatorios ABF" icon="📊" total={data.abf.length} open={openSections.has("abf")} onClick={() => toggle("abf")} />
+          {openSections.has("abf") && (
+            <Card className="border-0 shadow-none mb-4" style={CARD_STYLE}>
+              <CardContent className="p-0">
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #F0F0F0" }}>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Status</th>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Periodo</th>
+                      <th className="text-center font-semibold py-2 px-4" style={{ color: "#999" }}>Ano</th>
+                      <th className="text-center font-semibold py-2 px-4" style={{ color: "#999" }}>Tri</th>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Importado em</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.abf.map((r: any) => (
+                      <tr key={r.periodo} style={{ borderBottom: "1px solid #F8F8F8" }}>
+                        <td className="py-2 px-4">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: r.status === "revisado" ? "#E8F5E9" : "#FFF8E1", color: r.status === "revisado" ? "#0F6E56" : "#854F0B" }}>{r.status}</span>
+                        </td>
+                        <td className="py-2 px-4 font-medium" style={{ color: "#1A1A1A" }}>{r.periodo}</td>
+                        <td className="text-center py-2 px-4" style={{ color: "#666" }}>{r.ano}</td>
+                        <td className="text-center py-2 px-4" style={{ color: "#666" }}>{r.trimestre || "—"}</td>
+                        <td className="py-2 px-4" style={{ color: "#999" }}>{r.created_at ? new Date(r.created_at).toLocaleDateString("pt-BR") : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="p-3 text-right" style={{ borderTop: "1px solid #F0F0F0" }}>
+                  <a href="/backoffice/upload" className="text-xs font-semibold px-3 py-1.5 rounded text-white" style={{ background: P }}>Upload novo relatorio</a>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* FRANQUIAS */}
+          <SectionHeader titulo="Franquias (Scraping)" icon="▣" total={data.franquias.reduce((a: number, f: any) => a + f.total, 0)} open={openSections.has("franquias")} onClick={() => toggle("franquias")} />
+          {openSections.has("franquias") && (
+            <Card className="border-0 shadow-none mb-4" style={CARD_STYLE}>
+              <CardContent className="p-0">
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #F0F0F0" }}>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Fonte</th>
+                      <th className="text-right font-semibold py-2 px-4" style={{ color: "#999" }}>Total</th>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Ultima coleta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.franquias.map((f: any) => (
+                      <tr key={f.fonte} style={{ borderBottom: "1px solid #F8F8F8" }}>
+                        <td className="py-2 px-4 font-medium" style={{ color: "#1A1A1A" }}>{f.fonte}</td>
+                        <td className="text-right py-2 px-4 font-semibold" style={{ color: "#1A1A1A" }}>{f.total?.toLocaleString("pt-BR")}</td>
+                        <td className="py-2 px-4" style={{ color: "#999" }}>{f.ultima_coleta ? new Date(f.ultima_coleta).toLocaleDateString("pt-BR") : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="p-3 text-right" style={{ borderTop: "1px solid #F0F0F0" }}>
+                  <button onClick={() => sync("franquias")} disabled={syncing === "franquias"} className="text-xs font-semibold px-3 py-1.5 rounded text-white" style={{ background: syncing === "franquias" ? "#999" : P }}>
+                    {syncing === "franquias" ? "Coletando..." : "Coletar agora"}
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* NOTÍCIAS */}
+          <SectionHeader titulo="Noticias (Scraping + RSS)" icon="◆" total={data.noticias.reduce((a: number, f: any) => a + f.total, 0)} open={openSections.has("noticias")} onClick={() => toggle("noticias")} />
+          {openSections.has("noticias") && (
+            <Card className="border-0 shadow-none mb-4" style={CARD_STYLE}>
+              <CardContent className="p-0">
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #F0F0F0" }}>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Status</th>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Fonte</th>
+                      <th className="text-center font-semibold py-2 px-4" style={{ color: "#999" }}>Idioma</th>
+                      <th className="text-right font-semibold py-2 px-4" style={{ color: "#999" }}>Total</th>
+                      <th className="text-right font-semibold py-2 px-4" style={{ color: "#999" }}>Pendentes</th>
+                      <th className="text-left font-semibold py-2 px-4" style={{ color: "#999" }}>Ultima coleta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.noticias.map((f: any, i: number) => (
+                      <tr key={i} style={{ borderBottom: "1px solid #F8F8F8" }}>
+                        <td className="py-2 px-4"><StatusBadge status={f.sync_status} lastSync={f.ultima_coleta} /></td>
+                        <td className="py-2 px-4 font-medium" style={{ color: "#1A1A1A", maxWidth: 250 }}>
+                          <span className="truncate block">{f.fonte}</span>
+                        </td>
+                        <td className="text-center py-2 px-4">
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: f.idioma === "pt" ? "#E8F5E9" : "#EBF5FF", color: f.idioma === "pt" ? "#0F6E56" : "#2563EB" }}>{f.idioma?.toUpperCase()}</span>
+                        </td>
+                        <td className="text-right py-2 px-4" style={{ color: "#666" }}>{f.total}</td>
+                        <td className="text-right py-2 px-4">
+                          {f.pendentes > 0 ? <span className="font-semibold" style={{ color: P }}>{f.pendentes}</span> : <span style={{ color: "#CCC" }}>0</span>}
+                        </td>
+                        <td className="py-2 px-4" style={{ color: "#999" }}>{f.ultima_coleta ? new Date(f.ultima_coleta).toLocaleDateString("pt-BR") : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="p-3 flex justify-end gap-2" style={{ borderTop: "1px solid #F0F0F0" }}>
+                  <button onClick={() => sync("noticias")} disabled={syncing === "noticias"} className="text-xs font-semibold px-3 py-1.5 rounded text-white" style={{ background: syncing === "noticias" ? "#999" : P }}>
+                    {syncing === "noticias" ? "Coletando..." : "Coletar agora"}
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <p className="text-center mt-6" style={{ fontSize: 11, color: "#CCC" }}>
+            Ultima verificacao: {new Date().toLocaleString("pt-BR")}
+          </p>
+        </>
       )}
     </>
   )

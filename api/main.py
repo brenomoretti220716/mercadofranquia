@@ -495,6 +495,97 @@ def get_sync_status():
     return [dict(r) for r in rows]
 
 
+# ── CENTRAL DE FONTES ─────────────────────────────────────────────────────
+
+SERIES_BCB_NOMES = {11: "Selic", 433: "IPCA", 1: "USD/BRL", 4380: "PIB trimestral", 24369: "Desemprego",
+                     4393: "ICC", 4395: "ICE", 29039: "Endividamento", 17633: "Massa salarial"}
+
+
+@app.get("/api/fontes/status")
+def get_fontes_status():
+    conn = get_conn()
+
+    # Macro BCB
+    macro = []
+    for codigo, nome in SERIES_BCB_NOMES.items():
+        row = conn.execute("SELECT MAX(data) as ultimo, COUNT(*) as total FROM macro_bcb WHERE codigo_serie=?", (codigo,)).fetchone()
+        sync = conn.execute("SELECT status, created_at, erro FROM sync_log WHERE fonte LIKE ? ORDER BY created_at DESC LIMIT 1", (f"%{nome}%",)).fetchone()
+        macro.append({
+            "nome": nome, "codigo": codigo, "ultimo_registro": row["ultimo"], "total": row["total"],
+            "ultima_sync": sync["created_at"] if sync else None, "sync_status": sync["status"] if sync else "nunca",
+            "erro": sync["erro"] if sync else None,
+        })
+    # IBGE
+    for tab, nome in [("macro_ibge", "PIB por Estado"), ("pmc_ibge", "PMC Varejo")]:
+        row = conn.execute(f"SELECT MAX(data) as ultimo, COUNT(*) as total FROM {tab}").fetchone()
+        sync = conn.execute("SELECT status, created_at FROM sync_log WHERE fonte LIKE ? ORDER BY created_at DESC LIMIT 1", (f"%{nome}%",)).fetchone()
+        macro.append({"nome": nome, "codigo": tab, "ultimo_registro": row["ultimo"], "total": row["total"],
+                       "ultima_sync": sync["created_at"] if sync else None, "sync_status": sync["status"] if sync else "nunca", "erro": None})
+    # CAGED
+    for setor in ["Total", "Comércio", "Serviços", "Alojamento e alimentação"]:
+        row = conn.execute("SELECT MAX(data) as ultimo, COUNT(*) as total FROM caged_bcb WHERE setor=?", (setor,)).fetchone()
+        macro.append({"nome": f"CAGED {setor}", "codigo": "caged", "ultimo_registro": row["ultimo"], "total": row["total"],
+                       "ultima_sync": None, "sync_status": "ok", "erro": None})
+
+    # ABF Relatórios
+    abf = [dict(r) for r in conn.execute("SELECT periodo, ano, trimestre, status, created_at FROM relatorios ORDER BY ano DESC, trimestre DESC").fetchall()]
+
+    # Franquias
+    franquias = [dict(r) for r in conn.execute("SELECT fonte, COUNT(*) as total, MAX(data_coleta) as ultima_coleta FROM franquias GROUP BY fonte ORDER BY total DESC").fetchall()]
+
+    # Notícias
+    noticias = []
+    for r in conn.execute("""SELECT fonte, idioma, COUNT(*) as total,
+        SUM(CASE WHEN processado=0 THEN 1 ELSE 0 END) as pendentes,
+        MAX(data_coleta) as ultima_coleta
+        FROM noticias_raw GROUP BY fonte ORDER BY total DESC""").fetchall():
+        sync = conn.execute("SELECT status, created_at FROM sync_log WHERE fonte LIKE ? ORDER BY created_at DESC LIMIT 1", (f"%{r['fonte'][:20]}%",)).fetchone()
+        noticias.append({**dict(r), "sync_status": sync["status"] if sync else "nunca"})
+
+    conn.close()
+    return {"macro": macro, "abf": abf, "franquias": franquias, "noticias": noticias}
+
+
+@app.post("/api/fontes/sync/macro")
+def sync_macro():
+    import threading
+    def _run():
+        try:
+            from scrapers.noticias import coletar  # noqa - just to test import
+            import subprocess
+            subprocess.run(["python3", "sync.py"], cwd=os.path.dirname(__file__), timeout=300)
+        except Exception:
+            pass
+    threading.Thread(target=_run, daemon=True).start()
+    return {"status": "iniciado", "mensagem": "Sync macro iniciado em background"}
+
+
+@app.post("/api/fontes/sync/noticias")
+def sync_noticias():
+    import threading
+    def _run():
+        try:
+            from scrapers.noticias import coletar
+            coletar(limite=20)
+        except Exception:
+            pass
+    threading.Thread(target=_run, daemon=True).start()
+    return {"status": "iniciado", "mensagem": "Coleta de noticias iniciada em background"}
+
+
+@app.post("/api/fontes/sync/franquias")
+def sync_franquias():
+    import threading
+    def _run():
+        try:
+            from scrapers.franquias_abf import scrape_all
+            scrape_all()
+        except Exception:
+            pass
+    threading.Thread(target=_run, daemon=True).start()
+    return {"status": "iniciado", "mensagem": "Scraping de franquias iniciado em background"}
+
+
 # ── FRANQUIAS ─────────────────────────────────────────────────────────────
 
 @app.get("/api/franquias/investimento-por-segmento")

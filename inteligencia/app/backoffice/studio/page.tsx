@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { TabsFluxo, StatusBadges } from "@/components/editorial/TabsFluxo"
 import { FluxoActions, VersionBadge } from "@/components/editorial/FluxoActions"
 import { ModalRefazer } from "@/components/editorial/ModalRefazer"
+import { PreviewCriativo } from "@/components/editorial/PreviewCriativo"
+import { TiraSlides } from "@/components/editorial/TiraSlides"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 const P = "#E8421A"
@@ -111,9 +113,7 @@ export default function StudioPage() {
               {cards.map((p: any) => (
                 <div key={p.id} className="p-4" style={CS}>
                   <div className="flex gap-4">
-                    <div style={{ width: 200, height: 200, borderRadius: 8, overflow: "hidden", background: "#1A1A1A", flexShrink: 0 }}>
-                      <div style={{ transform: "scale(0.185)", transformOrigin: "top left", width: 1080, height: 1080 }} dangerouslySetInnerHTML={{ __html: p.card_html || "" }} />
-                    </div>
+                    <PreviewCriativo html={p.card_html || ""} tamanho="medio" badge={p.tipo} />
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
@@ -165,21 +165,18 @@ export default function StudioPage() {
                   </button>
                   {selectedCarrossel === c.id && slides.length > 0 && (
                     <div className="mt-3">
-                      <div className="flex gap-1.5 mb-3 overflow-x-auto">
-                        {slides.map((_: any, i: number) => (
-                          <button key={i} onClick={() => setSelectedSlide(i)} className="shrink-0" style={{ width: 60, height: 60, borderRadius: 4, overflow: "hidden", background: "#1A1A1A", border: selectedSlide === i ? `2px solid ${P}` : "1px solid #333" }}>
-                            <div style={{ transform: "scale(0.055)", transformOrigin: "top left", width: 1080, height: 1080 }} dangerouslySetInnerHTML={{ __html: slides[i]?.html || "" }} />
-                          </button>
-                        ))}
-                      </div>
-                      <div className="flex justify-center" style={{ background: "#0D0D0D", borderRadius: 8, padding: 12 }}>
-                        <div style={{ width: 380, height: 380, overflow: "hidden" }}>
-                          <div style={{ transform: "scale(0.352)", transformOrigin: "top left", width: 1080, height: 1080 }} dangerouslySetInnerHTML={{ __html: slides[selectedSlide]?.html || "" }} />
-                        </div>
-                      </div>
-                      <div className="mt-2 text-center">
-                        <span className="text-xs" style={{ color: "#999" }}>Slide {selectedSlide + 1}/{slides.length}</span>
-                        <a href={`${API_URL}/api/carrosseis/${c.id}/slide/${selectedSlide + 1}`} target="_blank" className="ml-3 text-xs font-semibold" style={{ color: P }}>Full size →</a>
+                      <TiraSlides slides={slides} slideAtivo={selectedSlide} onSelectSlide={setSelectedSlide} />
+                      <div className="flex justify-center mt-3">
+                        <PreviewCriativo
+                          html={slides[selectedSlide]?.html || ""}
+                          tamanho="grande"
+                          badge={`${selectedSlide + 1}/${slides.length}`}
+                          rodape={
+                            <div className="text-center mt-1">
+                              <a href={`${API_URL}/api/carrosseis/${c.id}/slide/${selectedSlide + 1}`} target="_blank" className="text-xs font-semibold" style={{ color: P }}>Full size →</a>
+                            </div>
+                          }
+                        />
                       </div>
                     </div>
                   )}

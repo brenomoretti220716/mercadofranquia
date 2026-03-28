@@ -44,9 +44,7 @@ if _logo_path.exists():
 _LOGO_WHITE = f'<img src="data:image/png;base64,{_LOGO_B64}" style="width:140px">' if _LOGO_B64 else '<div style="color:#FFF;font-size:18px;font-weight:700;letter-spacing:2px">MERCADO FRANQUIA</div>'
 _LOGO_WHITE_BIG = f'<img src="data:image/png;base64,{_LOGO_B64}" style="width:200px">' if _LOGO_B64 else '<div style="color:#FFF;font-size:24px;font-weight:700;letter-spacing:3px">MERCADO FRANQUIA</div>'
 
-_logo_dark_path = Path(__file__).parent.parent / "static" / "logo_dark_base64.txt"
-_LOGO_DARK_B64 = _logo_dark_path.read_text() if _logo_dark_path.exists() else _LOGO_B64
-_LOGO_DARK = f'<img src="data:image/png;base64,{_LOGO_DARK_B64}" style="width:140px">' if _LOGO_DARK_B64 else '<div style="color:#0D0D0D;font-size:18px;font-weight:700;letter-spacing:2px">MERCADO FRANQUIA</div>'
+_LOGO_DARK = f'<img src="data:image/png;base64,{_LOGO_B64}" style="width:140px;filter:invert(1) brightness(0.1)">' if _LOGO_B64 else '<div style="color:#0D0D0D;font-size:18px;font-weight:700;letter-spacing:2px">MERCADO FRANQUIA</div>'
 _FONTS = '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">'
 
 # ── SLIDE TEMPLATES ──────────────────────────────────────────────────────────

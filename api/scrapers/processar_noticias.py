@@ -77,7 +77,7 @@ Se a noticia for em ingles, traduza e adapte para o contexto brasileiro.
 Identifique o segmento ABF: Alimentacao-FS, Alimentacao-CD, Saude/Beleza, Moda, Educacao, Casa e Construcao, Hotelaria e Turismo, Servicos Automotivos, Comunicacao/TI, Entretenimento e Lazer, Limpeza e Conservacao, Servicos e Outros Negocios.
 
 Retorne APENAS JSON valido (sem markdown, sem codigo):
-{"titulo": "tese direta 60-70 chars", "titulo_h1": "mais longo e chamativo", "conteudo": "HTML 600-800 palavras com h2 descritivos, p, strong para dados-chave", "resumo": "2 frases impactantes max 150 chars", "meta_description": "155 chars com palavra-chave", "segmento": "...", "tags": ["5-7 tags"], "palavra_chave_principal": "...", "imagem_prompt": "descricao em ingles para geracao de imagem", "relevancia": 7}"""
+{"titulo": "tese direta 60-70 chars", "titulo_h1": "mais longo e chamativo", "conteudo": "HTML 600-800 palavras com h2 descritivos, p, strong para dados-chave", "resumo": "2 frases impactantes max 150 chars", "meta_description": "155 chars com palavra-chave", "segmento": "...", "tags": ["5-7 tags"], "palavra_chave_principal": "...", "imagem_prompt": "descricao em ingles para geracao de imagem", "relevancia": 7, "fontes_usadas": [{"nome": "ABF", "tipo": "relatorio", "dado": "faturamento R$ 301,7 bi", "periodo": "2025", "citacao": "(ABF, 2025)"}]}"""
 
 
 def processar(limite=10):
@@ -87,7 +87,7 @@ def processar(limite=10):
 
     conn = get_conn()
     pendentes = conn.execute(
-        "SELECT id, titulo, conteudo_bruto, resumo_bruto, idioma FROM noticias_raw WHERE processado = 0 ORDER BY created_at DESC LIMIT ?",
+        "SELECT id, titulo, conteudo_bruto, resumo_bruto, idioma, fonte FROM noticias_raw WHERE processado = 0 ORDER BY created_at DESC LIMIT ?",
         (limite,),
     ).fetchall()
     conn.close()
@@ -144,10 +144,12 @@ def processar(limite=10):
             raw_text = re.sub(r"```json|```", "", raw_text).strip()
             dados = json.loads(raw_text)
 
+            fonte_original = row["fonte"] if "fonte" in row.keys() else ""
+
             conn = get_conn()
             conn.execute(
-                """INSERT INTO noticias_fila(raw_id, titulo_gerado, conteudo_gerado, resumo, meta_description, palavra_chave, imagem_prompt, segmento, tags, relevancia, status)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                """INSERT INTO noticias_fila(raw_id, titulo_gerado, conteudo_gerado, resumo, meta_description, palavra_chave, imagem_prompt, segmento, tags, relevancia, status, status_editorial, fontes_usadas, fonte_original)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     raw_id,
                     dados.get("titulo_h1") or dados.get("titulo", titulo),
@@ -160,6 +162,9 @@ def processar(limite=10):
                     json.dumps(dados.get("tags", []), ensure_ascii=False),
                     dados.get("relevancia", 5),
                     "pendente",
+                    "revisao",
+                    json.dumps(dados.get("fontes_usadas", []), ensure_ascii=False),
+                    fonte_original,
                 ),
             )
             conn.execute("UPDATE noticias_raw SET processado = 1 WHERE id = ?", (raw_id,))

@@ -103,6 +103,37 @@ export default function EditorialPage() {
 
                   <p className="mb-2" style={{ fontSize: 13, color: "#666", lineHeight: 1.5 }}>{n.resumo}</p>
 
+                  {/* Fontes utilizadas */}
+                  {(() => {
+                    const fontes = (() => { try { return JSON.parse(n.fontes_usadas || "[]") } catch { return [] } })()
+                    if (fontes.length === 0 && !n.fonte_original) return null
+                    const TIPO_COR: Record<string, { bg: string; cor: string; icon: string }> = {
+                      relatorio: { bg: "#FFF0ED", cor: P, icon: "📊" },
+                      macro: { bg: "#EBF5FF", cor: "#2563EB", icon: "🏦" },
+                      franquias: { bg: "#E8F5E9", cor: "#2E7D32", icon: "▣" },
+                    }
+                    return (
+                      <div className="mb-3">
+                        <div className="text-[10px] font-semibold mb-1.5" style={{ color: "#999" }}>Fontes utilizadas:</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {n.fonte_original && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: "#F5F5F5", color: "#666" }} title={`Fonte original: ${n.fonte_original}`}>
+                              📰 {n.fonte_original}
+                            </span>
+                          )}
+                          {fontes.map((f: any, i: number) => {
+                            const cfg = TIPO_COR[f.tipo] || TIPO_COR.macro
+                            return (
+                              <span key={i} className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: cfg.bg, color: cfg.cor }} title={`${f.dado} — ${f.citacao}`}>
+                                {cfg.icon} {f.nome} — {f.citacao}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })()}
+
                   <button onClick={() => setExpandedId(expandedId === n.id ? null : n.id)} className="text-[11px] font-semibold mb-3" style={{ color: P, background: "none", border: "none", cursor: "pointer" }}>
                     {expandedId === n.id ? "Recolher ↑" : "Ver conteudo ↓"}
                   </button>

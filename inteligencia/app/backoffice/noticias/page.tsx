@@ -12,6 +12,9 @@ interface FilaItem {
   titulo_gerado: string
   conteudo_gerado: string
   resumo: string
+  meta_description: string
+  palavra_chave: string
+  imagem_prompt: string
   segmento: string
   tags: string
   relevancia: number
@@ -29,6 +32,7 @@ interface Stats {
 
 export default function NoticiasPage() {
   const [tab, setTab] = useState<"fila" | "publicadas" | "fontes">("fila")
+  const [expandedId, setExpandedId] = useState<number | null>(null)
   const [fila, setFila] = useState<FilaItem[]>([])
   const [publicadas, setPublicadas] = useState<any[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
@@ -119,7 +123,33 @@ export default function NoticiasPage() {
                         </div>
                         <h3 className="font-semibold mb-1" style={{ color: "#1A1A1A", fontSize: 15 }}>{n.titulo_gerado}</h3>
                         <p className="mb-2" style={{ fontSize: 13, color: "#666", lineHeight: 1.5 }}>{n.resumo}</p>
-                        <div className="text-xs" style={{ color: "#BBB" }}>{n.created_at ? new Date(n.created_at).toLocaleDateString("pt-BR") : ""}</div>
+                        {n.meta_description && (
+                          <div className="mb-2 px-2 py-1" style={{ background: "#F8F8F8", borderRadius: 4, fontSize: 11, color: "#888" }}>
+                            META: {n.meta_description}
+                          </div>
+                        )}
+                        {n.palavra_chave && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full mr-1" style={{ background: "#EBF5FF", color: "#2563EB" }}>
+                            KW: {n.palavra_chave}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setExpandedId(expandedId === n.id ? null : n.id)}
+                          className="text-[11px] font-semibold mt-1" style={{ color: P, background: "none", border: "none", cursor: "pointer" }}
+                        >
+                          {expandedId === n.id ? "Recolher ↑" : "Ver texto completo ↓"}
+                        </button>
+                        {expandedId === n.id && (
+                          <div className="mt-3 p-3" style={{ background: "#FAFAFA", borderRadius: 8, fontSize: 13, lineHeight: 1.7, color: "#333", maxHeight: 400, overflowY: "auto" }}>
+                            <div dangerouslySetInnerHTML={{ __html: n.conteudo_gerado }} />
+                            {n.imagem_prompt && (
+                              <div className="mt-3 p-2" style={{ background: "#F0F0F0", borderRadius: 4, fontSize: 11, color: "#888" }}>
+                                Prompt de imagem: {n.imagem_prompt}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="text-xs mt-1" style={{ color: "#BBB" }}>{n.created_at ? new Date(n.created_at).toLocaleDateString("pt-BR") : ""}</div>
                       </div>
                       <div className="flex flex-col gap-2 shrink-0">
                         <button onClick={() => publicar(n.id)} className="px-4 py-1.5 text-xs font-semibold text-white rounded-lg" style={{ background: "#2E7D32" }}>Publicar</button>

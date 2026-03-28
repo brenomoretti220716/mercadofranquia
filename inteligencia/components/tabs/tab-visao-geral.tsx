@@ -454,9 +454,9 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
       </div>
 
       {/* ═══ O QUE ESPERAR DE 2025 ═══ */}
-      <Secao titulo="O Que Esperar de 2025" />
+      <Secao titulo="Balanco 2025 e Perspectiva 2026" />
       <Paragrafo>
-        O conjunto de indicadores permite uma leitura integrada do momento. Combinando confianca do consumidor, custo do credito e trajetoria recente do setor, chegamos a um balanco sobre o momento de investir.
+        O setor encerrou 2025 com R$ 302 bi em faturamento, superando a projecao da ABF pela quinta vez consecutiva. Para 2026, a ABF projeta crescimento de +8% a +10%. Abaixo, o balanco de fatores que sustentam — e que podem limitar — esse crescimento.
       </Paragrafo>
 
       {/* Duas colunas: Favoráveis vs Atenção */}

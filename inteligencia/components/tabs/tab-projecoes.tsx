@@ -178,15 +178,42 @@ export function TabProjecoes({ projecoes }: { projecoes: Projecao[] }) {
             </div>
           </div>
 
+          {/* Segmentos Promissores 2026 */}
+          <Secao titulo="Segmentos Mais Promissores para 2026" />
+          <p className="mb-4" style={{ fontSize: 14, color: "#444", lineHeight: 1.7 }}>
+            Com base no desempenho recente e nas tendencias de consumo, alguns segmentos se destacam como os mais promissores para expansao em 2026.
+          </p>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            {[
+              { nome: "Saude, Beleza e Bem-Estar", badge: "Alto potencial", icon: "🔥", desc: "Liderou 2025 com o maior faturamento absoluto. Tendencia de autocuidado segue forte.", cor: "#2E7D32", bg: "#E8F5E9" },
+              { nome: "Limpeza e Conservacao", badge: "Alto potencial", icon: "🔥", desc: "Maior crescimento relativo. Demanda por terceirizacao e lavanderia self-service.", cor: "#2E7D32", bg: "#E8F5E9" },
+              { nome: "Alimentacao (Conveniencia)", badge: "Em expansao", icon: "📈", desc: "Modelo autosservico (market4u, honest market) cresce com menor custo operacional.", cor: P, bg: "#FFF0ED" },
+              { nome: "Servicos Educacionais", badge: "Em expansao", icon: "📈", desc: "Demanda por capacitacao profissional e idiomas em alta. EdTech complementa.", cor: P, bg: "#FFF0ED" },
+              { nome: "Entretenimento e Lazer", badge: "A observar", icon: "👀", desc: "Recuperacao pos-pandemia continua. Experiencias presenciais voltam com forca.", cor: "#F59E0B", bg: "#FFF8E1" },
+              { nome: "Servicos Automotivos", badge: "Estavel", icon: "📊", desc: "Frota brasileira envelhece — demanda por manutencao segue constante.", cor: "#666", bg: "#F5F5F5" },
+            ].map((s) => (
+              <div key={s.nome} className="p-4" style={CARD}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span style={{ fontSize: 16 }}>{s.icon}</span>
+                  <span className="font-semibold px-2 py-0.5" style={{ fontSize: 10, background: s.bg, color: s.cor, borderRadius: 4 }}>{s.badge}</span>
+                </div>
+                <div className="font-bold mb-1" style={{ fontSize: 13, color: "#1A1A1A" }}>{s.nome}</div>
+                <div style={{ fontSize: 12, color: "#666", lineHeight: 1.5 }}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+          <GraficoRodape fonte="ABF + analise Mercado Franquia" periodo="Mar/2026" />
+
           {/* Conclusão */}
+          <Secao titulo="Conclusao" />
           <div className="p-5" style={{ ...CARD, borderLeft: `4px solid ${P}` }}>
             <div className="font-bold mb-2" style={{ fontSize: 16, color: "#1A1A1A" }}>
               O consenso do mercado aponta para mais um ano de crescimento real do franchising.
             </div>
             <div style={{ fontSize: 14, color: "#666", lineHeight: 1.6 }}>
               A projecao de +{proj2026.fat_var_min_pct}% a +{proj2026.fat_var_max_pct}% e conservadora dado o historico de superacao.
-              O principal risco e o custo do credito, que pode limitar a entrada de novos franqueados.
-              Para investidores com capital proprio, o cenario permanece atrativo — especialmente em segmentos de saude, beleza e alimentacao.
+              O setor encerrou 2025 com R$ 302 bi — superando a projecao pela quinta vez consecutiva.
+              Para investidores com capital proprio, o cenario permanece atrativo, especialmente em saude/beleza, alimentacao e servicos educacionais.
             </div>
             <GraficoRodape fonte="ABF + analise Mercado Franquia" periodo="Projecao 2026" />
           </div>

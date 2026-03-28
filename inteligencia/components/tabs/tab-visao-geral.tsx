@@ -62,9 +62,10 @@ interface Props {
   consumidorPainel: any
   projecoes: any[]
   trimestrais: any[]
+  onTabChange?: (tabId: string) => void
 }
 
-export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestral, pibEstado, selic, ipca, desemprego, consumidorPainel, projecoes, serieEmpregos, trimestrais }: Props) {
+export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestral, pibEstado, selic, ipca, desemprego, consumidorPainel, projecoes, serieEmpregos, trimestrais, onTabChange }: Props) {
   // ── Dados processados ─────────────────────────────────────────────
   const totais = anual.filter((r: any) => r.segmento === "Total").sort((a: any, b: any) => a.periodo.localeCompare(b.periodo))
 
@@ -335,7 +336,7 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
         })}
       </div>
       <div className="text-right mb-2">
-        <span className="font-semibold cursor-pointer" style={{ fontSize: 13, color: P }}>Analise detalhada por segmento →</span>
+        <button onClick={() => onTabChange?.("segmentos")} className="font-semibold cursor-pointer" style={{ fontSize: 13, color: P, background: "none", border: "none" }}>Analise detalhada por segmento →</button>
       </div>
 
       {/* ═══ CENÁRIO MACRO ═══ */}
@@ -375,6 +376,10 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
         ))}
       </div>
       <GraficoRodape fonte="BCB + FGV" periodo="ultimo disponivel" />
+      <div className="flex justify-between mt-3 mb-2">
+        <button onClick={() => onTabChange?.("cenario")} className="font-semibold cursor-pointer" style={{ fontSize: 13, color: P, background: "none", border: "none" }}>Ver cenario economico completo →</button>
+        <button onClick={() => onTabChange?.("empregos")} className="font-semibold cursor-pointer" style={{ fontSize: 13, color: P, background: "none", border: "none" }}>Ver empregos e crescimento →</button>
+      </div>
 
       {/* ═══ POTENCIAL REGIONAL ═══ */}
       <Secao titulo="Onde Esta o Potencial no Brasil" />
@@ -547,6 +552,9 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
               </div>
 
               <GraficoRodape fonte="ABF + BCB + FGV" periodo="ultimo disponivel" />
+            </div>
+            <div className="text-right mt-3">
+              <button onClick={() => onTabChange?.("projecoes")} className="font-semibold cursor-pointer" style={{ fontSize: 13, color: P, background: "none", border: "none" }}>Ver projecoes e analise 2026 →</button>
             </div>
           </>
         )

@@ -1,15 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { TabVisaoGeral } from "@/components/tabs/tab-visao-geral"
 import { TabSegmentos } from "@/components/tabs/tab-segmentos"
 import { TabCenario } from "@/components/tabs/tab-cenario"
+import { TabEmpregos } from "@/components/tabs/tab-empregos"
 import { TabProjecoes } from "@/components/tabs/tab-projecoes"
 
 const TABS = [
   { id: "visao-geral", label: "Visao Geral" },
   { id: "segmentos", label: "Segmentos ABF" },
   { id: "cenario", label: "Cenario Economico" },
+  { id: "empregos", label: "Empregos e Crescimento" },
   { id: "projecoes", label: "Projecoes" },
 ] as const
 
@@ -43,6 +45,11 @@ export interface AllData {
 
 export default function NavTabs({ data }: { data: AllData }) {
   const [activeTab, setActiveTab] = useState<TabId>("visao-geral")
+
+  const goToTab = useCallback((tabId: string) => {
+    setActiveTab(tabId as TabId)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }, [])
 
   return (
     <>
@@ -79,6 +86,7 @@ export default function NavTabs({ data }: { data: AllData }) {
           consumidorPainel={data.consumidorPainel}
           projecoes={data.projecoes}
           trimestrais={data.trimestrais}
+          onTabChange={goToTab}
         />
       )}
       {activeTab === "segmentos" && (
@@ -101,6 +109,14 @@ export default function NavTabs({ data }: { data: AllData }) {
           cagedTotal={data.cagedTotal}
           empregosAbf={data.empregosAbf}
           indicadores={data.indicadores}
+        />
+      )}
+      {activeTab === "empregos" && (
+        <TabEmpregos
+          indicadores={data.indicadores}
+          cagedAlojamento={data.cagedAlojamento}
+          cagedTotal={data.cagedTotal}
+          empregosAbf={data.empregosAbf}
         />
       )}
       {activeTab === "projecoes" && (

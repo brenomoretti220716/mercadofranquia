@@ -178,6 +178,51 @@ def init_db():
         created_at  TEXT DEFAULT (datetime('now')),
         UNIQUE(data, codigo_bcb)
     );
+
+    CREATE TABLE IF NOT EXISTS noticias_raw (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        titulo          TEXT NOT NULL,
+        url             TEXT UNIQUE NOT NULL,
+        conteudo_bruto  TEXT,
+        resumo_bruto    TEXT,
+        fonte           TEXT NOT NULL,
+        url_fonte       TEXT,
+        idioma          TEXT DEFAULT 'pt',
+        data_publicacao TEXT,
+        data_coleta     TEXT DEFAULT (datetime('now')),
+        processado      INTEGER DEFAULT 0,
+        created_at      TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS noticias_fila (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        raw_id          INTEGER REFERENCES noticias_raw(id),
+        titulo_gerado   TEXT,
+        conteudo_gerado TEXT,
+        resumo          TEXT,
+        segmento        TEXT,
+        tags            TEXT,
+        relevancia      INTEGER DEFAULT 5,
+        status          TEXT DEFAULT 'pendente',
+        criado_por      TEXT DEFAULT 'ia',
+        created_at      TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS noticias_publicadas (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        fila_id         INTEGER REFERENCES noticias_fila(id),
+        titulo          TEXT NOT NULL,
+        conteudo        TEXT NOT NULL,
+        resumo          TEXT,
+        slug            TEXT UNIQUE,
+        segmento        TEXT,
+        tags            TEXT,
+        imagem_url      TEXT,
+        autor           TEXT DEFAULT 'Redação Mercado Franquia',
+        publicado_em    TEXT DEFAULT (datetime('now')),
+        views           INTEGER DEFAULT 0,
+        created_at      TEXT DEFAULT (datetime('now'))
+    );
     """)
     conn.commit()
     conn.close()

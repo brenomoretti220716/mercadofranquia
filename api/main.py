@@ -594,7 +594,8 @@ def get_admin_stats():
     """Retorna contagem de registros por tabela."""
     conn = get_conn()
     tabelas = ["relatorios", "faturamento", "indicadores", "ranking", "projecoes",
-               "macro_bcb", "macro_ibge", "pmc_ibge", "caged_bcb", "franquias", "sync_log"]
+               "macro_bcb", "macro_ibge", "pmc_ibge", "caged_bcb", "franquias",
+               "noticias_raw", "noticias_fila", "noticias_publicadas", "sync_log"]
     result = []
     for t in tabelas:
         try:
@@ -604,6 +605,94 @@ def get_admin_stats():
             result.append({"tabela": t, "registros": 0})
     conn.close()
     return result
+
+
+# ── NOTÍCIAS ─────────────────────────────────────────────────────────────
+
+@app.get("/api/noticias")
+def get_noticias(segmento: str = None, page: int = 1, limit: int = 10):
+    conn = get_conn()
+    q = "SELECT * FROM noticias_publicadas WHERE 1=1"
+    params = []
+    if segmento:
+        q += " AND segmento = ?"
+        params.append(segmento)
+    total = conn.execute(q.replace("*", "COUNT(*)"), params).fetchone()[0]
+    q += " ORDER BY publicado_em DESC LIMIT ? OFFSET ?"
+    params.extend([limit, (page - 1) * limit])
+    rows = conn.execute(q, params).fetchall()
+    conn.close()
+    return {"total": total, "page": page, "dados": [dict(r) for r in rows]}
+
+
+@app.get("/api/noticias/fila")
+def get_noticias_fila(status: str = "pendente"):
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT f.*, r.url as url_original, r.fonte as fonte_original FROM noticias_fila f LEFT JOIN noticias_raw r ON f.raw_id = r.id WHERE f.status = ? ORDER BY f.created_at DESC",
+        (status,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+@app.get("/api/noticias/stats")
+def get_noticias_stats():
+    conn = get_conn()
+    raw_total = conn.execute("SELECT COUNT(*) FROM noticias_raw").fetchone()[0]
+    raw_pendente = conn.execute("SELECT COUNT(*) FROM noticias_raw WHERE processado = 0").fetchone()[0]
+    fila_pendente = conn.execute("SELECT COUNT(*) FROM noticias_fila WHERE status = 'pendente'").fetchone()[0]
+    fila_publicada = conn.execute("SELECT COUNT(*) FROM noticias_fila WHERE status = 'publicado'").fetchone()[0]
+    fila_rejeitada = conn.execute("SELECT COUNT(*) FROM noticias_fila WHERE status = 'rejeitado'").fetchone()[0]
+    publicadas = conn.execute("SELECT COUNT(*) FROM noticias_publicadas").fetchone()[0]
+    conn.close()
+    return {
+        "raw": {"total": raw_total, "pendente": raw_pendente},
+        "fila": {"pendente": fila_pendente, "publicado": fila_publicada, "rejeitado": fila_rejeitada},
+        "publicadas": publicadas,
+    }
+
+
+@app.get("/api/noticias/{slug}")
+def get_noticia_detalhe(slug: str):
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM noticias_publicadas WHERE slug = ?", (slug,)).fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(404, "Noticia nao encontrada")
+    conn.execute("UPDATE noticias_publicadas SET views = views + 1 WHERE slug = ?", (slug,))
+    conn.commit()
+    conn.close()
+    return dict(row)
+
+
+@app.post("/api/noticias/publicar/{fila_id}")
+def publicar_noticia(fila_id: int):
+    conn = get_conn()
+    fila = conn.execute("SELECT * FROM noticias_fila WHERE id = ?", (fila_id,)).fetchone()
+    if not fila:
+        conn.close()
+        raise HTTPException(404, "Noticia na fila nao encontrada")
+    slug = re.sub(r"[^a-z0-9]+", "-", (fila["titulo_gerado"] or "").lower()).strip("-")[:80]
+    slug = f"{slug}-{fila_id}"
+    conn.execute(
+        """INSERT INTO noticias_publicadas(fila_id, titulo, conteudo, resumo, slug, segmento, tags)
+           VALUES(?,?,?,?,?,?,?)""",
+        (fila_id, fila["titulo_gerado"], fila["conteudo_gerado"], fila["resumo"], slug, fila["segmento"], fila["tags"]),
+    )
+    conn.execute("UPDATE noticias_fila SET status = 'publicado' WHERE id = ?", (fila_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok", "slug": slug}
+
+
+@app.post("/api/noticias/rejeitar/{fila_id}")
+def rejeitar_noticia(fila_id: int):
+    conn = get_conn()
+    conn.execute("UPDATE noticias_fila SET status = 'rejeitado' WHERE id = ?", (fila_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
 
 
 @app.get("/")

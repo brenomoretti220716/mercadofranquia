@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from "react"
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
-  BarChart, Bar, Cell, ReferenceLine,
+  BarChart, Bar, Cell,
 } from "recharts"
 import { InsightBox, h, GraficoRodape } from "@/components/insight-box"
 
@@ -62,13 +62,13 @@ function extrairAnoNum(periodo: string): number {
   return m ? parseInt(m[1]) : 0
 }
 
-const COMPARATIVOS = [
-  { titulo: "Saude/Beleza vs Farma/Cosmeticos", codigoPMC: "103155", segABF: ["Saúde, Beleza e Bem-Estar"] },
-  { titulo: "Alimentacao vs Hiper/Super", codigoPMC: "90672", segABF: ["Alimentação", "Alimentação - FS", "Alimentação - CD"] },
-  { titulo: "Moda vs Tecidos/Vestuario", codigoPMC: "90673", segABF: ["Moda"] },
-  { titulo: "Casa vs Moveis/Eletro", codigoPMC: "2759", segABF: ["Casa e Construção"] },
-  { titulo: "TI vs Informatica/Comunicacao", codigoPMC: "103159", segABF: ["Comunicação/TI"] },
-  { titulo: "Varejo Geral vs Combustiveis", codigoPMC: "103157", segABF: [] },
+const PMC_SEGMENTOS = [
+  { titulo: "Farma e Cosmeticos", codigoPMC: "103155" },
+  { titulo: "Hiper e Supermercados", codigoPMC: "90672" },
+  { titulo: "Tecidos e Vestuario", codigoPMC: "90673" },
+  { titulo: "Moveis e Eletrodomesticos", codigoPMC: "2759" },
+  { titulo: "Combustiveis", codigoPMC: "103157" },
+  { titulo: "Informatica e Comunicacao", codigoPMC: "103159" },
 ]
 
 interface Props {
@@ -532,123 +532,57 @@ export function TabSegmentos({ segmentos, segmentosAnual, pmcData }: Props) {
         </div>
       </div>
 
-      {/* 4. COMPARATIVO PMC */}
-      <SectionTitle>Franchising vs Varejo Geral (PMC)</SectionTitle>
-      {(() => {
-        // Calcular comparativos válidos (com dados ABF)
-        const validComps = COMPARATIVOS.filter((c) => c.segABF.length > 0).map((comp) => {
-          // PMC mensal
+      {/* 4. TERMÔMETRO DO VAREJO (PMC) */}
+      <SectionTitle>Termometro do Varejo por Segmento (PMC/IBGE)</SectionTitle>
+      <InsightBox insights={[
+        `A Pesquisa Mensal de Comercio (PMC) do IBGE mede a variacao do varejo. Esses dados mostram a saude do consumo nos segmentos equivalentes ao franchising.`,
+      ]} />
+      <div className="grid grid-cols-3 gap-3">
+        {PMC_SEGMENTOS.map((comp) => {
           const pmcFilt = pmcDados
             .filter((d: any) => d.codigo_segmento === comp.codigoPMC && d.variacao_mensal != null)
             .sort((a: any, b: any) => a.data.localeCompare(b.data))
+            .map((d: any) => ({ mes: d.data, pmc: d.variacao_mensal }))
+          if (pmcFilt.length === 0) return null
+          const ultimoPMC = pmcFilt[pmcFilt.length - 1]?.pmc ?? 0
+          const step = Math.max(1, Math.floor(pmcFilt.length / 6))
+          const primMes = pmcFilt[0]?.mes
+          const ultMes = pmcFilt[pmcFilt.length - 1]?.mes
+          const tendencia = pmcFilt.length >= 3
+            ? pmcFilt.slice(-3).reduce((a: number, d: any) => a + d.pmc, 0) / 3
+            : ultimoPMC
 
-          // ABF: crescimento % anual por ano
-          const abfItems = segmentosAnual.filter((r: any) => comp.segABF.some((s: string) => r.segmento.includes(s)))
-          const abfByAno = new Map<string, number>()
-          for (const r of abfItems) {
-            const ano = extrairAnoLabel(r.periodo)
-            abfByAno.set(ano, (abfByAno.get(ano) || 0) + r.valor_mm)
-          }
-          const abfAnos = [...abfByAno.keys()].sort()
-          const abfCrescPorAno: { ano: string; cresc: number }[] = []
-          for (let i = 1; i < abfAnos.length; i++) {
-            const prev = abfByAno.get(abfAnos[i - 1])!
-            const cur = abfByAno.get(abfAnos[i])!
-            abfCrescPorAno.push({ ano: abfAnos[i].replace("*", ""), cresc: +((cur / prev - 1) * 100).toFixed(1) })
-          }
-
-          // Mesclar: PMC mensal + ABF anual como pontos em Dez de cada ano
-          const merged = pmcFilt.map((d: any) => ({ mes: d.data, pmc: d.variacao_mensal, abf: null as number | null }))
-          for (const a of abfCrescPorAno) {
-            const dez = `${a.ano}-12`
-            const idx = merged.findIndex((m: any) => m.mes === dez)
-            if (idx >= 0) {
-              merged[idx].abf = a.cresc
-            } else {
-              // Inserir no ponto mais próximo do final do ano
-              const jun = `${a.ano}-06`
-              const idxJun = merged.findIndex((m: any) => m.mes === jun)
-              if (idxJun >= 0) merged[idxJun].abf = a.cresc
-            }
-          }
-
-          const ultimoPMC = pmcFilt.length > 0 ? pmcFilt[pmcFilt.length - 1].variacao_mensal : 0
-          const ultimoABF = abfCrescPorAno.length > 0 ? abfCrescPorAno[abfCrescPorAno.length - 1].cresc : null
-          const diff = ultimoABF !== null ? +(ultimoABF - ultimoPMC).toFixed(1) : null
-
-          return { ...comp, merged, ultimoPMC, ultimoABF, diff, hasABF: abfCrescPorAno.length > 0 }
-        }).filter((c) => c.hasABF)
-
-        // Insight: segmento com maior diferença
-        const maiorDiff = validComps.filter((c) => c.diff !== null).sort((a, b) => (b.diff ?? 0) - (a.diff ?? 0))[0]
-
-        return (
-          <>
-            <InsightBox insights={[
-              `Comparativo entre crescimento anual do franchising (ABF) e variacao do varejo geral (IBGE/PMC)`,
-              ...(maiorDiff && maiorDiff.diff! > 0 ? [`Maior diferenca: ${h(maiorDiff.titulo)} — franquias ${h("+" + maiorDiff.diff + "pp")} acima do varejo`] : []),
-            ]} />
-            <div className="grid grid-cols-3 gap-3">
-              {validComps.map((comp) => {
-                const step = Math.max(1, Math.floor(comp.merged.length / 6))
-                const primMes = comp.merged[0]?.mes
-                const ultMes = comp.merged[comp.merged.length - 1]?.mes
-
-                return (
-                  <div key={comp.codigoPMC} className="p-5" style={CARD}>
-                    <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>{comp.titulo}</div>
-
-                    <div className="flex items-center gap-3 mb-2">
-                      {comp.ultimoABF !== null && (
-                        <span className="text-xs font-bold" style={{ color: COR_PRIMARIA }}>
-                          ABF {comp.ultimoABF > 0 ? "+" : ""}{comp.ultimoABF}%
-                        </span>
-                      )}
-                      <span className="text-xs font-semibold" style={{ color: COR_COMPARATIVO }}>
-                        Varejo {comp.ultimoPMC > 0 ? "+" : ""}{comp.ultimoPMC.toFixed(1)}%
-                      </span>
-                      {comp.diff !== null && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5" style={{
-                          borderRadius: 4,
-                          background: comp.diff > 0 ? "#E8F5E9" : "#FFEBEE",
-                          color: comp.diff > 0 ? "#2E7D32" : "#C62828",
-                        }}>
-                          {comp.diff > 0 ? "+" : ""}{comp.diff}pp
-                        </span>
-                      )}
-                    </div>
-
-                    <ResponsiveContainer width="100%" height={130}>
-                      <LineChart data={comp.merged} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F5F5F5" />
-                        <XAxis dataKey="mes" tick={{ fontSize: 9, fill: "#ccc" }} tickLine={false} axisLine={false} tickFormatter={formatMes} interval={step} />
-                        <YAxis tick={{ fontSize: 9, fill: "#ccc" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} tickFormatter={(v: number) => `${v}%`} />
-                        <ReferenceLine y={0} stroke="#E5E7EB" strokeWidth={1} />
-                        <Tooltip
-                          formatter={(v, name) => {
-                            if (v == null) return [null, null]
-                            return [`${Number(v).toFixed(1)}%`, name === "pmc" ? "Varejo PMC" : "ABF Franquias"]
-                          }}
-                          labelFormatter={(l) => formatMes(String(l))}
-                          contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #eee" }}
-                        />
-                        <Line type="monotone" dataKey="pmc" stroke={COR_COMPARATIVO} strokeWidth={1.8} strokeDasharray="5 5" dot={false} name="pmc" />
-                        <Line type="monotone" dataKey="abf" stroke={COR_PRIMARIA} strokeWidth={2.5} dot={{ r: 5, fill: COR_PRIMARIA, stroke: "#fff", strokeWidth: 2 }} connectNulls={false} name="abf" />
-                      </LineChart>
-                    </ResponsiveContainer>
-
-                    <div className="flex justify-between mt-1" style={{ fontSize: 9, color: "#CCC" }}>
-                      <span>{primMes && ultMes ? `${formatMes(primMes)} — ${formatMes(ultMes)}` : ""}</span>
-                      <span><span style={{ color: COR_PRIMARIA }}>● ABF (anual)</span>  <span style={{ color: COR_COMPARATIVO }}>-- Varejo</span></span>
-                    </div>
-                  </div>
-                )
-              })}
+          return (
+            <div key={comp.codigoPMC} className="p-4" style={CARD}>
+              <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "#999" }}>{comp.titulo}</div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-bold" style={{ fontSize: 18, color: ultimoPMC >= 0 ? "#2E7D32" : "#D32F2F" }}>
+                  {ultimoPMC > 0 ? "+" : ""}{ultimoPMC.toFixed(1)}%
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5" style={{
+                  borderRadius: 4,
+                  background: tendencia > 1 ? "#E8F5E9" : tendencia < -1 ? "#FFEBEE" : "#FFF8E1",
+                  color: tendencia > 1 ? "#2E7D32" : tendencia < -1 ? "#D32F2F" : "#92610E",
+                }}>
+                  {tendencia > 1 ? "Em alta" : tendencia < -1 ? "Em queda" : "Estavel"}
+                </span>
+              </div>
+              <ResponsiveContainer width="100%" height={90}>
+                <LineChart data={pmcFilt} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                  <XAxis dataKey="mes" tick={{ fontSize: 9, fill: "#ccc" }} tickLine={false} axisLine={false} tickFormatter={formatMes} interval={step} />
+                  <YAxis tick={{ fontSize: 9, fill: "#ccc" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
+                  <Tooltip formatter={(v) => [`${Number(v).toFixed(1)}%`, "Varejo PMC"]} labelFormatter={(l) => formatMes(String(l))} contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #eee" }} />
+                  <Line type="monotone" dataKey="pmc" stroke={COR_COMPARATIVO} strokeWidth={1.8} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+              <div className="text-right" style={{ fontSize: 9, color: "#CCC" }}>
+                {primMes && ultMes ? `${formatMes(primMes)} — ${formatMes(ultMes)}` : ""} · IBGE/PMC
+              </div>
             </div>
-            <GraficoRodape fonte="ABF + IBGE/PMC" periodo="ultimos 36 meses" nota="ABF = crescimento anual · PMC = variacao mensal YoY" />
-          </>
-        )
-      })()}
+          )
+        }).filter(Boolean)}
+      </div>
+      <GraficoRodape fonte="IBGE/PMC" periodo="ultimos 36 meses" nota="Variacao % mensal do varejo por segmento" />
     </>
   )
 }

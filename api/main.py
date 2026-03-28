@@ -880,10 +880,42 @@ def editorial_editar(fila_id: int, payload: dict):
 
 # ── STUDIO SOCIAL ────────────────────────────────────────────────────────
 
+@app.get("/api/studio/stats")
+def studio_stats():
+    conn = get_conn()
+    cards = {}
+    carrosseis = {}
+    for s in ["revisao", "aprovado", "publicado", "rejeitado"]:
+        cards[s] = conn.execute("SELECT COUNT(*) FROM posts_instagram WHERE status_editorial = ?", (s,)).fetchone()[0]
+        carrosseis[s] = conn.execute("SELECT COUNT(*) FROM carrosseis_instagram WHERE status_editorial = ?", (s,)).fetchone()[0]
+    conn.close()
+    return {"cards": cards, "carrosseis": carrosseis}
+
+
+@app.get("/api/studio/cards")
+def studio_cards(status: str = "revisao"):
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT p.*, f.titulo_gerado as noticia_titulo FROM posts_instagram p LEFT JOIN noticias_fila f ON p.noticia_id = f.id WHERE p.status_editorial = ? ORDER BY p.created_at DESC",
+        (status,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 @app.post("/api/studio/cards/{post_id}/aprovar")
 def studio_card_aprovar(post_id: int):
     conn = get_conn()
     conn.execute("UPDATE posts_instagram SET status = 'aprovado', status_editorial = 'aprovado' WHERE id = ?", (post_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
+@app.post("/api/studio/cards/{post_id}/publicar")
+def studio_card_publicar(post_id: int):
+    conn = get_conn()
+    conn.execute("UPDATE posts_instagram SET status_editorial = 'publicado' WHERE id = ?", (post_id,))
     conn.commit()
     conn.close()
     return {"status": "ok"}
@@ -898,10 +930,46 @@ def studio_card_rejeitar(post_id: int):
     return {"status": "ok"}
 
 
+@app.put("/api/studio/cards/{post_id}/editar")
+def studio_card_editar(post_id: int, payload: dict):
+    conn = get_conn()
+    sets, params = [], []
+    for campo in ["legenda", "hashtags"]:
+        if campo in payload:
+            sets.append(f"{campo} = ?")
+            params.append(payload[campo])
+    if sets:
+        params.append(post_id)
+        conn.execute(f"UPDATE posts_instagram SET {', '.join(sets)} WHERE id = ?", params)
+        conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
+@app.get("/api/studio/carrosseis")
+def studio_carrosseis(status: str = "revisao"):
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT id, tipo, titulo, hashtags, design, status, status_editorial, versao, created_at FROM carrosseis_instagram WHERE status_editorial = ? ORDER BY created_at DESC",
+        (status,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 @app.post("/api/studio/carrosseis/{carrossel_id}/aprovar")
 def studio_carrossel_aprovar(carrossel_id: int):
     conn = get_conn()
     conn.execute("UPDATE carrosseis_instagram SET status = 'aprovado', status_editorial = 'aprovado' WHERE id = ?", (carrossel_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
+@app.post("/api/studio/carrosseis/{carrossel_id}/publicar")
+def studio_carrossel_publicar(carrossel_id: int):
+    conn = get_conn()
+    conn.execute("UPDATE carrosseis_instagram SET status_editorial = 'publicado' WHERE id = ?", (carrossel_id,))
     conn.commit()
     conn.close()
     return {"status": "ok"}

@@ -8,15 +8,17 @@ const P = "#E8421A"
 const CS = { background: "#fff", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }
 
 const TIPOS_CARROSSEL = [
-  { id: "educacional", label: "Educacional", icon: "💡" },
-  { id: "verdade_mito", label: "Verdade/Mito", icon: "🤔" },
-  { id: "ranking", label: "Top 5", icon: "🏆" },
-  { id: "noticia_analise", label: "Noticia", icon: "📰" },
-  { id: "pratico", label: "Pratico", icon: "✅" },
+  { id: "educacional", icon: "💡", label: "Educacional" },
+  { id: "verdade_mito", icon: "🤔", label: "Verdade/Mito" },
+  { id: "ranking", icon: "🏆", label: "Top 5" },
+  { id: "noticia_analise", icon: "📰", label: "Noticia" },
+  { id: "pratico", icon: "✅", label: "Pratico" },
 ]
 
 export default function StudioPage() {
-  const [tab, setTab] = useState("cards")
+  const [mainTab, setMainTab] = useState("revisao")
+  const [subTab, setSubTab] = useState<"cards" | "carrosseis">("cards")
+  const [stats, setStats] = useState<any>({ cards: {}, carrosseis: {} })
   const [cards, setCards] = useState<any[]>([])
   const [carrosseis, setCarrosseis] = useState<any[]>([])
   const [selectedCarrossel, setSelectedCarrossel] = useState<number | null>(null)
@@ -28,169 +30,196 @@ export default function StudioPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const [cRes, carRes] = await Promise.all([
-        fetch(`${API_URL}/api/instagram/posts`).then((r) => r.ok ? r.json() : []),
-        fetch(`${API_URL}/api/carrosseis`).then((r) => r.ok ? r.json() : []),
+      const status = mainTab === "gerar" ? "revisao" : mainTab
+      const [statsR, cardsR, carR] = await Promise.all([
+        fetch(`${API_URL}/api/studio/stats`).then((r) => r.ok ? r.json() : { cards: {}, carrosseis: {} }),
+        fetch(`${API_URL}/api/studio/cards?status=${status}`).then((r) => r.ok ? r.json() : []),
+        fetch(`${API_URL}/api/studio/carrosseis?status=${status}`).then((r) => r.ok ? r.json() : []),
       ])
-      setCards(cRes)
-      setCarrosseis(carRes)
+      setStats(statsR)
+      setCards(cardsR)
+      setCarrosseis(carR)
     } catch {}
     setLoading(false)
-  }, [])
+  }, [mainTab])
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  async function cardAction(id: number, act: string) {
+    await fetch(`${API_URL}/api/studio/cards/${id}/${act}`, { method: act === "editar" ? "PUT" : "POST" })
+    fetchData()
+  }
+  async function carrosselAction(id: number, act: string) {
+    await fetch(`${API_URL}/api/studio/carrosseis/${id}/${act}`, { method: "POST" })
+    fetchData()
+  }
   async function gerarCarrossel(tipo: string) {
     setGerando(true)
     try { await fetch(`${API_URL}/api/carrosseis/gerar?tipo=${tipo}`, { method: "POST" }); await fetchData() } catch {}
     setGerando(false)
   }
-
   async function selectCarrossel(id: number) {
     setSelectedCarrossel(id); setSelectedSlide(0)
-    try { const r = await fetch(`${API_URL}/api/carrosseis/${id}`); if (r.ok) { const d = await r.json(); setSlides(d.slides || []) } } catch {}
+    try { const r = await fetch(`${API_URL}/api/carrosseis/${id}`); if (r.ok) setSlides((await r.json()).slides || []) } catch {}
   }
 
-  async function cardAction(id: number, act: string) {
-    await fetch(`${API_URL}/api/studio/cards/${id}/${act}`, { method: "POST" }); fetchData()
-  }
-  async function carrosselAction(id: number, act: string) {
-    await fetch(`${API_URL}/api/studio/carrosseis/${id}/${act}`, { method: "POST" }); fetchData()
-  }
+  const cTotal = (s: string) => (stats.cards?.[s] || 0) + (stats.carrosseis?.[s] || 0)
 
-  const cardsRevisao = cards.filter((c: any) => c.status !== "aprovado")
-  const cardsAprovados = cards.filter((c: any) => c.status === "aprovado")
-  const carrosseisAprovados = carrosseis.filter((c: any) => c.status === "aprovado")
-  const totalAprovados = cardsAprovados.length + carrosseisAprovados.length
+  const TABS = [
+    { id: "revisao", label: "Revisao", count: cTotal("revisao"), cor: "#F59E0B" },
+    { id: "aprovado", label: "Aprovados", count: cTotal("aprovado"), cor: "#2563EB" },
+    { id: "publicado", label: "Publicados", count: cTotal("publicado"), cor: "#2E7D32" },
+    { id: "rejeitado", label: "Rejeitados", count: cTotal("rejeitado"), cor: "#999" },
+    { id: "gerar", label: "Gerar Novo", count: 0, cor: P },
+  ]
+
+  function ActionButtons({ type, id, status }: { type: "cards" | "carrosseis"; id: number; status: string }) {
+    const fn = type === "cards" ? cardAction : carrosselAction
+    return (
+      <div className="flex items-center gap-1.5 mt-2">
+        {status === "revisao" && (
+          <>
+            <button onClick={() => fn(id, "aprovar")} className="px-2.5 py-1 text-[10px] font-semibold text-white rounded" style={{ background: "#2E7D32" }}>Aprovar</button>
+            <button onClick={() => fn(id, "rejeitar")} className="px-2.5 py-1 text-[10px] font-semibold rounded" style={{ color: "#D32F2F", border: "1px solid #FFCDD2" }}>Rejeitar</button>
+          </>
+        )}
+        {status === "aprovado" && (
+          <button onClick={() => fn(id, "publicar")} className="px-2.5 py-1 text-[10px] font-semibold text-white rounded" style={{ background: "#2E7D32" }}>Publicar</button>
+        )}
+        {type === "cards" && (
+          <a href={`${API_URL}/api/instagram/card/${id}`} target="_blank" className="text-[10px] font-semibold" style={{ color: P }}>Full size →</a>
+        )}
+      </div>
+    )
+  }
 
   return (
     <>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-medium" style={{ color: "#1a1a18" }}>Studio Social</h1>
-          {cardsRevisao.length > 0 && <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full" style={{ background: "#FFF8E1", color: "#854F0B" }}>{cardsRevisao.length} cards</span>}
-          {totalAprovados > 0 && <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full" style={{ background: "#E8F5E9", color: "#2E7D32" }}>{totalAprovados} aprovados</span>}
+          {cTotal("revisao") > 0 && <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full" style={{ background: "#FFF8E1", color: "#854F0B" }}>{cTotal("revisao")} em revisao</span>}
+          {cTotal("aprovado") > 0 && <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full" style={{ background: "#E8F5E9", color: "#2E7D32" }}>{cTotal("aprovado")} aprovados</span>}
         </div>
       </div>
 
-      <div className="flex gap-1.5 mb-6 p-1" style={{ background: "#F0F0F0", borderRadius: 10 }}>
-        {[
-          { id: "cards", label: `Cards (${cards.length})` },
-          { id: "carrosseis", label: `Carrosseis (${carrosseis.length})` },
-          { id: "aprovados", label: `Aprovados (${totalAprovados})` },
-        ].map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} className="px-4 py-2 text-xs font-semibold whitespace-nowrap transition-all"
-            style={{ background: tab === t.id ? P : "transparent", color: tab === t.id ? "#fff" : "#666", borderRadius: 8 }}>{t.label}</button>
+      {/* Main tabs */}
+      <div className="flex gap-1.5 mb-5 p-1" style={{ background: "#F0F0F0", borderRadius: 10 }}>
+        {TABS.map((t) => (
+          <button key={t.id} onClick={() => setMainTab(t.id)} className="px-4 py-2 text-xs font-semibold whitespace-nowrap transition-all"
+            style={{ background: mainTab === t.id ? P : "transparent", color: mainTab === t.id ? "#fff" : "#666", borderRadius: 8 }}>
+            {t.label}{t.count > 0 ? ` (${t.count})` : ""}
+          </button>
         ))}
       </div>
 
       {loading ? <p className="text-center py-12" style={{ color: "#bbb" }}>Carregando...</p> : (
         <>
-          {tab === "cards" && (
-            <div className="grid grid-cols-2 gap-4">
-              {cards.map((p: any) => (
-                <div key={p.id} className="p-4" style={CS}>
-                  <div className="flex gap-4">
-                    <div style={{ width: 200, height: 200, borderRadius: 8, overflow: "hidden", background: "#1A1A1A", flexShrink: 0 }}>
-                      <div style={{ transform: "scale(0.185)", transformOrigin: "top left", width: 1080, height: 1080 }} dangerouslySetInnerHTML={{ __html: p.card_html || "" }} />
-                    </div>
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#FFF0ED", color: P }}>{p.tipo}</span>
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: p.status === "aprovado" ? "#E8F5E9" : "#F5F5F5", color: p.status === "aprovado" ? "#2E7D32" : "#999" }}>{p.status}</span>
-                        </div>
-                        <p className="font-medium mb-1" style={{ fontSize: 13, color: "#1A1A1A" }}>{p.legenda}</p>
-                        <p className="text-[10px]" style={{ color: "#999" }}>{p.hashtags?.slice(0, 60)}</p>
-                      </div>
-                      <div className="flex items-center gap-2 mt-3">
-                        {p.status !== "aprovado" && (
-                          <>
-                            <button onClick={() => cardAction(p.id, "aprovar")} className="px-3 py-1 text-[10px] font-semibold text-white rounded" style={{ background: "#2E7D32" }}>Aprovar</button>
-                            <button onClick={() => cardAction(p.id, "rejeitar")} className="px-3 py-1 text-[10px] font-semibold rounded" style={{ color: "#D32F2F", border: "1px solid #FFCDD2" }}>Rejeitar</button>
-                          </>
-                        )}
-                        <a href={`${API_URL}/api/instagram/card/${p.id}`} target="_blank" className="text-[10px] font-semibold" style={{ color: P }}>Full size →</a>
-                      </div>
-                    </div>
-                  </div>
+          {/* TAB GERAR NOVO */}
+          {mainTab === "gerar" && (
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-semibold mb-3" style={{ fontSize: 15, color: "#1A1A1A" }}>Gerar Carrossel</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {TIPOS_CARROSSEL.map((t) => (
+                    <button key={t.id} onClick={() => gerarCarrossel(t.id)} disabled={gerando} className="p-4 text-center transition-all" style={{ ...CS, border: "1px solid #E5E5E5", opacity: gerando ? 0.5 : 1 }}>
+                      <span style={{ fontSize: 24 }}>{t.icon}</span>
+                      <div className="font-semibold mt-1" style={{ fontSize: 11, color: "#1A1A1A" }}>{t.label}</div>
+                    </button>
+                  ))}
                 </div>
-              ))}
-              {cards.length === 0 && <p className="col-span-2 text-center py-12" style={{ color: "#bbb" }}>Nenhum card</p>}
+                {gerando && <p className="text-center mt-3 font-semibold" style={{ color: P, fontSize: 12 }}>Gerando com IA...</p>}
+              </div>
+              <div>
+                <h3 className="font-semibold mb-3" style={{ fontSize: 15, color: "#1A1A1A" }}>Em breve</h3>
+                <p style={{ fontSize: 13, color: "#999" }}>Geracao de cards avulsos por tema customizado</p>
+              </div>
             </div>
           )}
 
-          {tab === "carrosseis" && (
+          {/* TABS COM CONTEÚDO */}
+          {mainTab !== "gerar" && (
             <>
-              <div className="grid grid-cols-5 gap-2 mb-5">
-                {TIPOS_CARROSSEL.map((t) => (
-                  <button key={t.id} onClick={() => gerarCarrossel(t.id)} disabled={gerando} className="p-3 text-center transition-all" style={{ ...CS, border: "1px solid #E5E5E5", opacity: gerando ? 0.5 : 1 }}>
-                    <span style={{ fontSize: 20 }}>{t.icon}</span>
-                    <div className="font-semibold mt-1" style={{ fontSize: 10, color: "#1A1A1A" }}>{t.label}</div>
-                  </button>
-                ))}
+              {/* Sub tabs: Cards | Carrosséis */}
+              <div className="flex gap-2 mb-4">
+                <button onClick={() => setSubTab("cards")} className="px-3 py-1 text-xs font-semibold" style={{ background: subTab === "cards" ? "#1A1A1A" : "#F0F0F0", color: subTab === "cards" ? "#fff" : "#666", borderRadius: 6 }}>
+                  Cards ({cards.length})
+                </button>
+                <button onClick={() => setSubTab("carrosseis")} className="px-3 py-1 text-xs font-semibold" style={{ background: subTab === "carrosseis" ? "#1A1A1A" : "#F0F0F0", color: subTab === "carrosseis" ? "#fff" : "#666", borderRadius: 6 }}>
+                  Carrosseis ({carrosseis.length})
+                </button>
               </div>
-              {gerando && <p className="text-center mb-3 font-semibold" style={{ color: P, fontSize: 12 }}>Gerando...</p>}
 
-              {carrosseis.map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between p-3 mb-2 cursor-pointer" style={{ ...CS, border: selectedCarrossel === c.id ? `2px solid ${P}` : "1px solid #F0F0F0" }} onClick={() => selectCarrossel(c.id)}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#FFF0ED", color: P }}>{c.tipo}</span>
-                    <span className="font-medium text-sm" style={{ color: "#1A1A1A" }}>{c.titulo}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px]" style={{ color: c.status === "aprovado" ? "#2E7D32" : "#999" }}>{c.status}</span>
-                    {c.status !== "aprovado" && (
-                      <button onClick={(e) => { e.stopPropagation(); carrosselAction(c.id, "aprovar") }} className="px-2 py-0.5 text-[10px] font-semibold text-white rounded" style={{ background: "#2E7D32" }}>Aprovar</button>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {selectedCarrossel && slides.length > 0 && (
-                <Card className="border-0 shadow-none mt-3" style={CS}>
-                  <CardContent className="p-4">
-                    <div className="flex gap-1.5 mb-3 overflow-x-auto">
-                      {slides.map((_: any, i: number) => (
-                        <button key={i} onClick={() => setSelectedSlide(i)} className="shrink-0" style={{ width: 60, height: 60, borderRadius: 4, overflow: "hidden", background: "#1A1A1A", border: selectedSlide === i ? `2px solid ${P}` : "1px solid #333" }}>
-                          <div style={{ transform: "scale(0.055)", transformOrigin: "top left", width: 1080, height: 1080 }} dangerouslySetInnerHTML={{ __html: slides[i]?.html || "" }} />
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex justify-center" style={{ background: "#0D0D0D", borderRadius: 8, padding: 12 }}>
-                      <div style={{ width: 380, height: 380, overflow: "hidden" }}>
-                        <div style={{ transform: "scale(0.352)", transformOrigin: "top left", width: 1080, height: 1080 }} dangerouslySetInnerHTML={{ __html: slides[selectedSlide]?.html || "" }} />
+              {/* CARDS */}
+              {subTab === "cards" && (
+                <div className="grid grid-cols-2 gap-4">
+                  {cards.length === 0 && <p className="col-span-2 text-center py-12" style={{ color: "#bbb" }}>Nenhum card nesta aba</p>}
+                  {cards.map((p: any) => (
+                    <div key={p.id} className="p-4" style={CS}>
+                      <div className="flex gap-4">
+                        <div style={{ width: 200, height: 200, borderRadius: 8, overflow: "hidden", background: "#1A1A1A", flexShrink: 0 }}>
+                          <div style={{ transform: "scale(0.185)", transformOrigin: "top left", width: 1080, height: 1080 }} dangerouslySetInnerHTML={{ __html: p.card_html || "" }} />
+                        </div>
+                        <div className="flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#FFF0ED", color: P }}>{p.tipo}</span>
+                              {p.versao > 1 && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "#EBF5FF", color: "#2563EB" }}>v{p.versao}</span>}
+                            </div>
+                            <p className="font-medium mb-1" style={{ fontSize: 12, color: "#1A1A1A", lineHeight: 1.4 }}>{p.legenda}</p>
+                            <p className="text-[10px]" style={{ color: "#999" }}>{p.hashtags?.slice(0, 50)}</p>
+                          </div>
+                          <ActionButtons type="cards" id={p.id} status={mainTab} />
+                        </div>
                       </div>
                     </div>
-                    <div className="mt-2 text-center text-xs" style={{ color: "#999" }}>Slide {selectedSlide + 1}/{slides.length}</div>
-                  </CardContent>
-                </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* CARROSSÉIS */}
+              {subTab === "carrosseis" && (
+                <div className="flex flex-col gap-3">
+                  {carrosseis.length === 0 && <p className="text-center py-12" style={{ color: "#bbb" }}>Nenhum carrossel nesta aba</p>}
+                  {carrosseis.map((c: any) => (
+                    <div key={c.id} className="p-4" style={CS}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#FFF0ED", color: P }}>{c.tipo}</span>
+                          <span className="font-medium text-sm" style={{ color: "#1A1A1A" }}>{c.titulo}</span>
+                          {c.versao > 1 && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "#EBF5FF", color: "#2563EB" }}>v{c.versao}</span>}
+                        </div>
+                        <ActionButtons type="carrosseis" id={c.id} status={mainTab} />
+                      </div>
+                      {/* Slides preview on click */}
+                      <button onClick={() => selectCarrossel(c.id)} className="text-[11px] font-semibold" style={{ color: P, background: "none", border: "none" }}>
+                        {selectedCarrossel === c.id ? "Recolher slides ↑" : "Ver slides ↓"}
+                      </button>
+                      {selectedCarrossel === c.id && slides.length > 0 && (
+                        <div className="mt-3">
+                          <div className="flex gap-1.5 mb-3 overflow-x-auto">
+                            {slides.map((_: any, i: number) => (
+                              <button key={i} onClick={() => setSelectedSlide(i)} className="shrink-0" style={{ width: 60, height: 60, borderRadius: 4, overflow: "hidden", background: "#1A1A1A", border: selectedSlide === i ? `2px solid ${P}` : "1px solid #333" }}>
+                                <div style={{ transform: "scale(0.055)", transformOrigin: "top left", width: 1080, height: 1080 }} dangerouslySetInnerHTML={{ __html: slides[i]?.html || "" }} />
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex justify-center" style={{ background: "#0D0D0D", borderRadius: 8, padding: 12 }}>
+                            <div style={{ width: 380, height: 380, overflow: "hidden" }}>
+                              <div style={{ transform: "scale(0.352)", transformOrigin: "top left", width: 1080, height: 1080 }} dangerouslySetInnerHTML={{ __html: slides[selectedSlide]?.html || "" }} />
+                            </div>
+                          </div>
+                          <div className="mt-2 text-center">
+                            <span className="text-xs" style={{ color: "#999" }}>Slide {selectedSlide + 1}/{slides.length}</span>
+                            <a href={`${API_URL}/api/carrosseis/${c.id}/slide/${selectedSlide + 1}`} target="_blank" className="ml-3 text-xs font-semibold" style={{ color: P }}>Full size →</a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </>
-          )}
-
-          {tab === "aprovados" && (
-            <div className="flex flex-col gap-2">
-              {totalAprovados === 0 && <p className="text-center py-12" style={{ color: "#bbb" }}>Nenhum aprovado</p>}
-              {cardsAprovados.map((p: any) => (
-                <div key={`card-${p.id}`} className="flex items-center justify-between p-3" style={{ ...CS, border: "1px solid #F0F0F0" }}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "#FFF0ED", color: P }}>Card</span>
-                    <span className="font-medium text-sm" style={{ color: "#1A1A1A" }}>{p.legenda?.slice(0, 60)}</span>
-                  </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: "#E8F5E9", color: "#2E7D32" }}>aprovado</span>
-                </div>
-              ))}
-              {carrosseisAprovados.map((c: any) => (
-                <div key={`car-${c.id}`} className="flex items-center justify-between p-3" style={{ ...CS, border: "1px solid #F0F0F0" }}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "#EBF5FF", color: "#2563EB" }}>Carrossel</span>
-                    <span className="font-medium text-sm" style={{ color: "#1A1A1A" }}>{c.titulo}</span>
-                  </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: "#E8F5E9", color: "#2E7D32" }}>aprovado</span>
-                </div>
-              ))}
-            </div>
           )}
         </>
       )}

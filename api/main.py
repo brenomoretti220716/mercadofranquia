@@ -950,7 +950,7 @@ def studio_card_editar(post_id: int, payload: dict):
 def studio_carrosseis(status: str = "revisao"):
     conn = get_conn()
     rows = conn.execute(
-        "SELECT id, tipo, titulo, hashtags, design, status, status_editorial, versao, created_at FROM carrosseis_instagram WHERE status_editorial = ? ORDER BY created_at DESC",
+        "SELECT id, tipo, titulo, hashtags, design, status, status_editorial, versao, fontes_usadas, created_at FROM carrosseis_instagram WHERE status_editorial = ? ORDER BY created_at DESC",
         (status,),
     ).fetchall()
     conn.close()

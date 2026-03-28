@@ -7,6 +7,7 @@ import { FluxoActions, VersionBadge } from "@/components/editorial/FluxoActions"
 import { ModalRefazer } from "@/components/editorial/ModalRefazer"
 import { PreviewCriativo } from "@/components/editorial/PreviewCriativo"
 import { TiraSlides } from "@/components/editorial/TiraSlides"
+import { FontesBadges } from "@/components/editorial/FontesBadges"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 const P = "#E8421A"
@@ -121,7 +122,8 @@ export default function StudioPage() {
                           <VersionBadge versao={p.versao} />
                         </div>
                         <p className="font-medium mb-1" style={{ fontSize: 12, color: "#1A1A1A", lineHeight: 1.4 }}>{p.legenda}</p>
-                        <p className="text-[10px]" style={{ color: "#999" }}>{p.hashtags?.slice(0, 50)}</p>
+                        <p className="text-[10px] mb-1" style={{ color: "#999" }}>{p.hashtags?.slice(0, 50)}</p>
+                        <FontesBadges fontesJson={p.fontes_usadas} compacto />
                       </div>
                       <FluxoActions
                         status={tab}
@@ -160,7 +162,8 @@ export default function StudioPage() {
                       onVoltarRevisao={() => carrosselAction(c.id, "aprovar")}
                     />
                   </div>
-                  <button onClick={() => selectCarrossel(c.id)} className="text-[11px] font-semibold" style={{ color: P, background: "none", border: "none" }}>
+                  <FontesBadges fontesJson={c.fontes_usadas} compacto />
+                  <button onClick={() => selectCarrossel(c.id)} className="text-[11px] font-semibold mt-1" style={{ color: P, background: "none", border: "none" }}>
                     {selectedCarrossel === c.id ? "Recolher ↑" : "Ver slides ↓"}
                   </button>
                   {selectedCarrossel === c.id && slides.length > 0 && (

@@ -149,26 +149,32 @@ def scrape_portal(limite=20):
 
 # ── Google News RSS ──────────────────────────────────────────────────────────
 
-GOOGLE_NEWS_QUERIES = [
-    "franquias brasil",
-    "franchising brasil",
-    "ABF franquias",
+GOOGLE_NEWS_BR = [
+    {"q": "franquias brasil", "hl": "pt-BR", "gl": "BR", "ceid": "BR:pt-419", "idioma": "pt"},
+    {"q": "franchising brasil", "hl": "pt-BR", "gl": "BR", "ceid": "BR:pt-419", "idioma": "pt"},
+    {"q": "ABF franquias", "hl": "pt-BR", "gl": "BR", "ceid": "BR:pt-419", "idioma": "pt"},
 ]
 
-def scrape_google_news(limite=30):
-    """Google News RSS — agrega VEJA, Exame, CNN, Valor, ISTOÉ, etc."""
-    fonte_base = "Google News"
+GOOGLE_NEWS_EN = [
+    {"q": "franchise business 2026", "hl": "en", "gl": "US", "ceid": "US:en", "idioma": "en"},
+    {"q": "franchising industry trends", "hl": "en", "gl": "US", "ceid": "US:en", "idioma": "en"},
+    {"q": "franchise investment", "hl": "en", "gl": "US", "ceid": "US:en", "idioma": "en"},
+    {"q": "franchising Brazil", "hl": "en", "gl": "US", "ceid": "US:en", "idioma": "en"},
+]
+
+
+def _scrape_google_news_queries(queries, limite=30):
+    """Google News RSS genérico — aceita lista de queries com idioma."""
     all_noticias = []
     seen_urls = set()
 
-    for query in GOOGLE_NEWS_QUERIES:
+    for qcfg in queries:
         try:
-            url = f"https://news.google.com/rss/search?q={query.replace(' ', '+')}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
+            url = f"https://news.google.com/rss/search?q={qcfg['q'].replace(' ', '+')}&hl={qcfg['hl']}&gl={qcfg['gl']}&ceid={qcfg['ceid']}"
             xml_data = _fetch(url, accept="application/xml")
             root = ET.fromstring(xml_data)
-            items = root.findall(".//item")
 
-            for item in items:
+            for item in root.findall(".//item"):
                 titulo = (item.findtext("title") or "").strip()
                 link = (item.findtext("link") or "").strip()
                 source = (item.findtext("source") or "Google News").strip()
@@ -180,22 +186,26 @@ def scrape_google_news(limite=30):
                 seen_urls.add(link)
 
                 all_noticias.append({
-                    "titulo": titulo,
-                    "url": link,
-                    "resumo": desc[:300],
-                    "conteudo": desc,
-                    "fonte": f"Google News/{source}",
-                    "url_fonte": url,
-                    "idioma": "pt",
-                    "data": pub or None,
+                    "titulo": titulo, "url": link, "resumo": desc[:300], "conteudo": desc,
+                    "fonte": f"Google News/{source}", "url_fonte": url,
+                    "idioma": qcfg["idioma"], "data": pub or None,
                 })
 
             time.sleep(RATE_LIMIT)
         except Exception as e:
-            print(f"  [ERRO] Google News query '{query}': {e}")
+            print(f"  [ERRO] Google News '{qcfg['q']}': {e}")
 
-    # Limitar e retornar
     return all_noticias[:limite]
+
+
+def scrape_google_news_br(limite=30):
+    """Google News BR — VEJA, CNN, ISTOÉ, Valor, etc."""
+    return _scrape_google_news_queries(GOOGLE_NEWS_BR, limite)
+
+
+def scrape_google_news_en(limite=30):
+    """Google News EN — Franchise Times, Forbes, Bloomberg, etc."""
+    return _scrape_google_news_queries(GOOGLE_NEWS_EN, limite)
 
 
 # ── RSS genérico ─────────────────────────────────────────────────────────────
@@ -253,7 +263,8 @@ def scrape_mapa(limite=20):
 # ── FONTES ───────────────────────────────────────────────────────────────────
 
 FONTES = {
-    "google_news": {"nome": "Google News BR", "fn": scrape_google_news},
+    "google_news_br": {"nome": "Google News BR", "fn": scrape_google_news_br},
+    "google_news_en": {"nome": "Google News EN", "fn": scrape_google_news_en},
     "abf": {"nome": "ABF Noticias", "fn": scrape_abf},
     "portal": {"nome": "Portal do Franchising", "fn": scrape_portal},
     "mapa": {"nome": "Mapa das Franquias", "fn": scrape_mapa},

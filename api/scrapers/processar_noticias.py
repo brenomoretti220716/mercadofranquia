@@ -12,8 +12,17 @@ import re
 import ssl
 import sys
 import time
+from pathlib import Path
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError
+
+# Carregar .env sem python-dotenv
+_env_file = Path(__file__).parent.parent / ".env"
+if _env_file.exists():
+    for _line in _env_file.read_text().splitlines():
+        if "=" in _line and not _line.startswith("#"):
+            _k, _v = _line.split("=", 1)
+            os.environ.setdefault(_k.strip(), _v.strip())
 
 try:
     import certifi

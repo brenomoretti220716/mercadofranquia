@@ -147,6 +147,57 @@ def scrape_portal(limite=20):
         return []
 
 
+# ── Google News RSS ──────────────────────────────────────────────────────────
+
+GOOGLE_NEWS_QUERIES = [
+    "franquias brasil",
+    "franchising brasil",
+    "ABF franquias",
+]
+
+def scrape_google_news(limite=30):
+    """Google News RSS — agrega VEJA, Exame, CNN, Valor, ISTOÉ, etc."""
+    fonte_base = "Google News"
+    all_noticias = []
+    seen_urls = set()
+
+    for query in GOOGLE_NEWS_QUERIES:
+        try:
+            url = f"https://news.google.com/rss/search?q={query.replace(' ', '+')}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
+            xml_data = _fetch(url, accept="application/xml")
+            root = ET.fromstring(xml_data)
+            items = root.findall(".//item")
+
+            for item in items:
+                titulo = (item.findtext("title") or "").strip()
+                link = (item.findtext("link") or "").strip()
+                source = (item.findtext("source") or "Google News").strip()
+                pub = (item.findtext("pubDate") or "")[:30]
+                desc = _clean(item.findtext("description") or "")
+
+                if not titulo or not link or link in seen_urls:
+                    continue
+                seen_urls.add(link)
+
+                all_noticias.append({
+                    "titulo": titulo,
+                    "url": link,
+                    "resumo": desc[:300],
+                    "conteudo": desc,
+                    "fonte": f"Google News/{source}",
+                    "url_fonte": url,
+                    "idioma": "pt",
+                    "data": pub or None,
+                })
+
+            time.sleep(RATE_LIMIT)
+        except Exception as e:
+            print(f"  [ERRO] Google News query '{query}': {e}")
+
+    # Limitar e retornar
+    return all_noticias[:limite]
+
+
 # ── RSS genérico ─────────────────────────────────────────────────────────────
 
 def parse_rss(url, fonte, idioma="en", limite=20):
@@ -202,6 +253,7 @@ def scrape_mapa(limite=20):
 # ── FONTES ───────────────────────────────────────────────────────────────────
 
 FONTES = {
+    "google_news": {"nome": "Google News BR", "fn": scrape_google_news},
     "abf": {"nome": "ABF Noticias", "fn": scrape_abf},
     "portal": {"nome": "Portal do Franchising", "fn": scrape_portal},
     "mapa": {"nome": "Mapa das Franquias", "fn": scrape_mapa},

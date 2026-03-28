@@ -376,9 +376,35 @@ export function TabVisaoGeral({ kpis, serieAnual, segmentos, anual, pibTrimestra
         ))}
       </div>
       <GraficoRodape fonte="BCB + FGV" periodo="ultimo disponivel" />
-      <div className="flex justify-between mt-3 mb-2">
-        <button onClick={() => onTabChange?.("cenario")} className="font-semibold cursor-pointer" style={{ fontSize: 13, color: P, background: "none", border: "none" }}>Ver cenario economico completo →</button>
-        <button onClick={() => onTabChange?.("empregos")} className="font-semibold cursor-pointer" style={{ fontSize: 13, color: P, background: "none", border: "none" }}>Ver empregos e crescimento →</button>
+      <div className="text-right mt-3">
+        <button onClick={() => onTabChange?.("cenario")} className="font-semibold cursor-pointer" style={{ fontSize: 13, color: P, background: "none", border: "none" }}>Ver analise economica completa →</button>
+      </div>
+
+      {/* ═══ EMPREGOS (RESUMO) ═══ */}
+      <div className="mt-6 mb-2" style={{ borderTop: "1px solid #F0F0F0", paddingTop: 24 }}>
+        <div className="flex items-center gap-3 mb-3">
+          <h3 className="font-semibold" style={{ color: "#1A1A1A", fontSize: 18 }}>Empregos no Franchising</h3>
+          <div className="flex-1 h-px" style={{ background: "#E5E5E5" }} />
+        </div>
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="p-4" style={CARD}>
+            <div className="uppercase tracking-wider font-semibold mb-1" style={{ color: "#999", fontSize: 10 }}>Empregos diretos</div>
+            <div className="font-bold" style={{ color: "#1A1A1A", fontSize: 24 }}>{serieEmpregos[serieEmpregos.length - 1]?.empregos_mi || "1.80"} mi</div>
+          </div>
+          <div className="p-4" style={CARD}>
+            <div className="uppercase tracking-wider font-semibold mb-1" style={{ color: "#999", fontSize: 10 }}>Crescimento</div>
+            <div className="font-bold" style={{ color: "#2E7D32", fontSize: 24 }}>+38%</div>
+            <div style={{ fontSize: 10, color: "#999" }}>desde 2018</div>
+          </div>
+          <div className="p-4" style={CARD}>
+            <div className="uppercase tracking-wider font-semibold mb-1" style={{ color: "#999", fontSize: 10 }}>Por unidade</div>
+            <div className="font-bold" style={{ color: "#1A1A1A", fontSize: 24 }}>~9</div>
+            <div style={{ fontSize: 10, color: "#999" }}>empregos diretos</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <button onClick={() => onTabChange?.("empregos")} className="font-semibold cursor-pointer" style={{ fontSize: 13, color: P, background: "none", border: "none" }}>Ver analise de empregos →</button>
+        </div>
       </div>
 
       {/* ═══ POTENCIAL REGIONAL ═══ */}

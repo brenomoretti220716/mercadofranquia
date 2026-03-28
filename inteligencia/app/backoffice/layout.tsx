@@ -4,18 +4,21 @@ import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { SessionProvider } from "next-auth/react"
 
-const NAV_ITEMS = [
-  { href: "/backoffice", label: "Dashboard Admin", icon: "◉" },
-  { href: "/backoffice/dashboard-dados", label: "Dashboard Dados", icon: "◈" },
-  { href: "/backoffice/relatorios", label: "Relatorios ABF", icon: "◫" },
-  { href: "/backoffice/upload", label: "Upload PDF", icon: "↑" },
-  { href: "/backoffice/franquias", label: "Franquias", icon: "▣" },
-  { href: "/backoffice/noticias", label: "Noticias", icon: "◆" },
-  { href: "/backoffice/carrosseis", label: "Carrosseis", icon: "◇" },
-  { href: "/backoffice/fontes", label: "Central de Fontes", icon: "◎" },
-  { href: "/backoffice/logs", label: "Logs", icon: "≡" },
-  { href: "/backoffice/auditoria", label: "Auditoria", icon: "✓" },
-]
+const NAV = [
+  { type: "link", href: "/backoffice", label: "Dashboard Admin", icon: "◉" },
+  { type: "section", label: "CONTEUDO" },
+  { type: "link", href: "/backoffice/editorial", label: "Editorial", icon: "📰" },
+  { type: "link", href: "/backoffice/studio", label: "Studio Social", icon: "🎨" },
+  { type: "section", label: "DADOS" },
+  { type: "link", href: "/backoffice/inteligencia", label: "Inteligencia", icon: "📊" },
+  { type: "sub", href: "/backoffice/dashboard-dados", label: "Dashboard Dados" },
+  { type: "sub", href: "/backoffice/franquias", label: "Franquias" },
+  { type: "sub", href: "/backoffice/relatorios", label: "Relatorios ABF" },
+  { type: "sub", href: "/backoffice/upload", label: "Upload PDF" },
+  { type: "sub", href: "/backoffice/fontes", label: "Central de Fontes" },
+  { type: "section", label: "SISTEMA" },
+  { type: "link", href: "/backoffice/sistema", label: "Logs & Auditoria", icon: "⚙️" },
+] as const
 
 function Sidebar() {
   const pathname = usePathname()
@@ -34,20 +37,31 @@ function Sidebar() {
         </div>
 
         <nav className="flex flex-col gap-0.5">
-          {NAV_ITEMS.map((item) => {
+          {NAV.map((item, i) => {
+            if (item.type === "section") {
+              return (
+                <div key={i} className="mt-4 mb-1 px-3">
+                  <span style={{ fontSize: 9, color: "#555", letterSpacing: 2, fontWeight: 700 }}>{item.label}</span>
+                </div>
+              )
+            }
             const active = pathname === item.href
+            const isSub = item.type === "sub"
             return (
               <a
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-3 px-3 py-2 text-xs font-medium transition-all"
+                className="flex items-center gap-2.5 px-3 py-1.5 text-xs font-medium transition-all"
                 style={{
                   background: active ? "#E8421A" : "transparent",
-                  color: active ? "#fff" : "#999",
+                  color: active ? "#fff" : isSub ? "#666" : "#999",
                   borderRadius: 8,
+                  paddingLeft: isSub ? 28 : 12,
+                  fontSize: isSub ? 11 : 12,
                 }}
               >
-                <span style={{ fontSize: 13 }}>{item.icon}</span>
+                {!isSub && "icon" in item && <span style={{ fontSize: 13 }}>{item.icon}</span>}
+                {isSub && <span style={{ color: "#444", fontSize: 10 }}>↳</span>}
                 {item.label}
               </a>
             )

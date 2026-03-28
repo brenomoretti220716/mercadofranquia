@@ -56,15 +56,13 @@ Exemplos de boas legendas:
 
 Retorne: {"posts": [...]}"""
 
-# Logo em base64 (carregada uma vez)
+# Logos base64
 import base64
-_logo_path = Path(__file__).parent.parent / "static" / "logo_mercado_franquia.png"
-_LOGO_B64 = ""
-if _logo_path.exists():
-    _LOGO_B64 = base64.b64encode(_logo_path.read_bytes()).decode()
+_static = Path(__file__).parent.parent / "static"
+_LOGO_B64 = (_static / "logo_base64.txt").read_text() if (_static / "logo_base64.txt").exists() else ""
 
 _FONTS = '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">'
-_LOGO_IMG = f'<img src="data:image/png;base64,{_LOGO_B64}" style="width:140px">' if _LOGO_B64 else '<div style="color:#666;font-size:16px;text-transform:uppercase;letter-spacing:4px">Mercado Franquia</div>'
+_LOGO_IMG = f'<img src="data:image/png;base64,{_LOGO_B64}" style="width:160px">' if _LOGO_B64 else '<div style="color:#666;font-size:16px;text-transform:uppercase;letter-spacing:4px">Mercado Franquia</div>'
 
 _PH = "___CARD_CONTENT___"
 _BASE = f"""<html><head>{_FONTS}</head><body style="margin:0;padding:0">

@@ -734,6 +734,60 @@ def aprovar_instagram(post_id: int):
     return {"status": "ok"}
 
 
+# ── CARROSSÉIS ───────────────────────────────────────────────────────────
+
+@app.post("/api/carrosseis/gerar")
+def gerar_carrossel_endpoint(tipo: str = "educacional"):
+    from scrapers.gerar_carrossel import gerar_carrossel
+    carrossel_id = gerar_carrossel(tipo=tipo)
+    if not carrossel_id:
+        raise HTTPException(500, "Erro ao gerar carrossel")
+    return {"status": "ok", "id": carrossel_id}
+
+
+@app.get("/api/carrosseis")
+def get_carrosseis():
+    conn = get_conn()
+    rows = conn.execute("SELECT id, tipo, titulo, hashtags, design, status, created_at FROM carrosseis_instagram ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+@app.get("/api/carrosseis/{carrossel_id}")
+def get_carrossel(carrossel_id: int):
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM carrosseis_instagram WHERE id = ?", (carrossel_id,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404, "Carrossel nao encontrado")
+    d = dict(row)
+    d["slides"] = json.loads(d["slides_json"]) if d["slides_json"] else []
+    return d
+
+
+@app.get("/api/carrosseis/{carrossel_id}/slide/{n}")
+def get_carrossel_slide(carrossel_id: int, n: int):
+    conn = get_conn()
+    row = conn.execute("SELECT slides_json FROM carrosseis_instagram WHERE id = ?", (carrossel_id,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404, "Carrossel nao encontrado")
+    slides = json.loads(row["slides_json"]) if row["slides_json"] else []
+    if n < 1 or n > len(slides):
+        raise HTTPException(404, f"Slide {n} nao encontrado")
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=slides[n - 1].get("html", ""), status_code=200)
+
+
+@app.post("/api/carrosseis/{carrossel_id}/aprovar")
+def aprovar_carrossel(carrossel_id: int):
+    conn = get_conn()
+    conn.execute("UPDATE carrosseis_instagram SET status = 'aprovado' WHERE id = ?", (carrossel_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
 @app.get("/")
 def root():
     return {"status": "ok", "api": "ABF Franquias Intelligence", "docs": "/docs"}

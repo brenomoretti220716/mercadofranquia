@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/backoffice/upload", label: "Upload PDF", icon: "↑" },
   { href: "/backoffice/franquias", label: "Franquias", icon: "▣" },
   { href: "/backoffice/noticias", label: "Noticias", icon: "◆" },
+  { href: "/backoffice/carrosseis", label: "Carrosseis", icon: "◇" },
   { href: "/backoffice/fontes", label: "Fontes", icon: "◎" },
   { href: "/backoffice/logs", label: "Logs", icon: "≡" },
   { href: "/backoffice/auditoria", label: "Auditoria", icon: "✓" },

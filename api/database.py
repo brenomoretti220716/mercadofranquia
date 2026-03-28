@@ -226,6 +226,17 @@ def init_db():
         created_at      TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS carrosseis_instagram (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        tipo            TEXT NOT NULL,
+        titulo          TEXT NOT NULL,
+        slides_json     TEXT NOT NULL,
+        hashtags        TEXT,
+        design          TEXT DEFAULT 'escuro',
+        status          TEXT DEFAULT 'rascunho',
+        created_at      TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS noticias_publicadas (
         id              INTEGER PRIMARY KEY AUTOINCREMENT,
         fila_id         INTEGER REFERENCES noticias_fila(id),

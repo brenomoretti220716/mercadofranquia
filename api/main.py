@@ -695,6 +695,45 @@ def rejeitar_noticia(fila_id: int):
     return {"status": "ok"}
 
 
+# ── INSTAGRAM ────────────────────────────────────────────────────────────
+
+@app.get("/api/instagram/posts")
+def get_instagram_posts(noticia_id: int = None, status: str = None):
+    conn = get_conn()
+    q = "SELECT p.*, f.titulo_gerado as noticia_titulo FROM posts_instagram p LEFT JOIN noticias_fila f ON p.noticia_id = f.id WHERE 1=1"
+    params = []
+    if noticia_id:
+        q += " AND p.noticia_id = ?"
+        params.append(noticia_id)
+    if status:
+        q += " AND p.status = ?"
+        params.append(status)
+    q += " ORDER BY p.created_at DESC"
+    rows = conn.execute(q, params).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+@app.get("/api/instagram/card/{post_id}")
+def get_instagram_card(post_id: int):
+    conn = get_conn()
+    row = conn.execute("SELECT card_html FROM posts_instagram WHERE id = ?", (post_id,)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404, "Post nao encontrado")
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=row["card_html"], status_code=200)
+
+
+@app.post("/api/instagram/aprovar/{post_id}")
+def aprovar_instagram(post_id: int):
+    conn = get_conn()
+    conn.execute("UPDATE posts_instagram SET status = 'aprovado' WHERE id = ?", (post_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+
 @app.get("/")
 def root():
     return {"status": "ok", "api": "ABF Franquias Intelligence", "docs": "/docs"}

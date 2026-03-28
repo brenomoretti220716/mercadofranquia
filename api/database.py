@@ -211,6 +211,21 @@ def init_db():
         created_at      TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS posts_instagram (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        noticia_id      INTEGER REFERENCES noticias_fila(id),
+        tipo            TEXT NOT NULL,
+        legenda         TEXT NOT NULL,
+        hashtags        TEXT,
+        dado_destaque   TEXT,
+        subtexto        TEXT,
+        card_html       TEXT,
+        imagem_url      TEXT,
+        status          TEXT DEFAULT 'rascunho',
+        instagram_post_id TEXT,
+        created_at      TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS noticias_publicadas (
         id              INTEGER PRIMARY KEY AUTOINCREMENT,
         fila_id         INTEGER REFERENCES noticias_fila(id),

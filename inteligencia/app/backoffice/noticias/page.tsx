@@ -31,24 +31,28 @@ interface Stats {
 }
 
 export default function NoticiasPage() {
-  const [tab, setTab] = useState<"fila" | "publicadas" | "fontes">("fila")
+  const [tab, setTab] = useState<"fila" | "publicadas" | "fontes" | "instagram">("fila")
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [igPreviewId, setIgPreviewId] = useState<number | null>(null)
   const [fila, setFila] = useState<FilaItem[]>([])
   const [publicadas, setPublicadas] = useState<any[]>([])
+  const [igPosts, setIgPosts] = useState<any[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const [statsRes, filaRes, pubRes] = await Promise.all([
+      const [statsRes, filaRes, pubRes, igRes] = await Promise.all([
         fetch(`${API_URL}/api/noticias/stats`).then((r) => r.ok ? r.json() : null),
         fetch(`${API_URL}/api/noticias/fila?status=pendente`).then((r) => r.ok ? r.json() : []),
         fetch(`${API_URL}/api/noticias?limit=20`).then((r) => r.ok ? r.json() : { dados: [] }),
+        fetch(`${API_URL}/api/instagram/posts`).then((r) => r.ok ? r.json() : []),
       ])
       setStats(statsRes)
       setFila(filaRes)
       setPublicadas(pubRes.dados || [])
+      setIgPosts(igRes)
     } catch {}
     setLoading(false)
   }, [])
@@ -87,6 +91,7 @@ export default function NoticiasPage() {
         {[
           { id: "fila" as const, label: `Fila de Revisao${stats ? ` (${stats.fila.pendente})` : ""}` },
           { id: "publicadas" as const, label: `Publicadas${stats ? ` (${stats.publicadas})` : ""}` },
+          { id: "instagram" as const, label: `Instagram (${igPosts.length})` },
           { id: "fontes" as const, label: "Fontes" },
         ].map((t) => (
           <button
@@ -186,6 +191,71 @@ export default function NoticiasPage() {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* INSTAGRAM */}
+          {tab === "instagram" && (
+            <div className="flex flex-col gap-3">
+              {igPosts.length === 0 ? (
+                <p className="text-center py-12" style={{ color: "#bbb" }}>Nenhum post gerado. Processe noticias primeiro.</p>
+              ) : igPosts.map((p: any) => (
+                <Card key={p.id} className="border-0 shadow-none" style={CARD_STYLE}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Card preview mini */}
+                      <div
+                        className="shrink-0 cursor-pointer"
+                        style={{ width: 120, height: 120, borderRadius: 8, overflow: "hidden", background: "#1A1A1A", border: igPreviewId === p.id ? `2px solid ${P}` : "1px solid #333" }}
+                        onClick={() => setIgPreviewId(igPreviewId === p.id ? null : p.id)}
+                      >
+                        <div style={{ transform: "scale(0.111)", transformOrigin: "top left", width: 1080, height: 1080 }} dangerouslySetInnerHTML={{ __html: p.card_html || "" }} />
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{
+                            background: p.tipo === "dado_principal" ? "#FFF0ED" : p.tipo === "citacao" ? "#EBF5FF" : p.tipo === "pergunta" ? "#FFF8E1" : "#E8F5E9",
+                            color: p.tipo === "dado_principal" ? P : p.tipo === "citacao" ? "#2563EB" : p.tipo === "pergunta" ? "#92610E" : "#2E7D32",
+                          }}>{p.tipo}</span>
+                          <span className="text-[10px]" style={{ color: "#BBB" }}>{p.noticia_titulo?.slice(0, 40)}...</span>
+                        </div>
+                        <p className="font-medium mb-1" style={{ fontSize: 13, color: "#1A1A1A" }}>{p.legenda}</p>
+                        <p className="text-xs" style={{ color: "#999" }}>{p.hashtags?.slice(0, 80)}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: p.status === "aprovado" ? "#E8F5E9" : "#F5F5F5", color: p.status === "aprovado" ? "#2E7D32" : "#999" }}>
+                            {p.status}
+                          </span>
+                          {p.status === "rascunho" && (
+                            <button
+                              onClick={async () => { await fetch(`${API_URL}/api/instagram/aprovar/${p.id}`, { method: "POST" }); fetchData() }}
+                              className="text-[10px] font-semibold px-2 py-0.5 rounded text-white" style={{ background: "#2E7D32" }}
+                            >
+                              Aprovar
+                            </button>
+                          )}
+                          <a href={`${API_URL}/api/instagram/card/${p.id}`} target="_blank" className="text-[10px] font-semibold" style={{ color: P }}>
+                            Ver card →
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Preview expandido */}
+                    {igPreviewId === p.id && (
+                      <div className="mt-3 p-3" style={{ background: "#0D0D0D", borderRadius: 8, overflow: "auto" }}>
+                        <div style={{ width: 540, height: 540, margin: "0 auto" }}>
+                          <div style={{ transform: "scale(0.5)", transformOrigin: "top left", width: 1080, height: 1080 }} dangerouslySetInnerHTML={{ __html: p.card_html || "" }} />
+                        </div>
+                        <div className="mt-2 p-2" style={{ background: "#1A1A1A", borderRadius: 4 }}>
+                          <p className="text-xs text-white mb-1">{p.legenda}</p>
+                          <p className="text-[10px]" style={{ color: "#666" }}>{p.hashtags}</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
 
           {/* FONTES */}

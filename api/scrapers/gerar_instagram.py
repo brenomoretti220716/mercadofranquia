@@ -66,6 +66,7 @@ if _logo_path.exists():
 _FONTS = '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">'
 _LOGO_IMG = f'<img src="data:image/png;base64,{_LOGO_B64}" style="width:140px">' if _LOGO_B64 else '<div style="color:#666;font-size:16px;text-transform:uppercase;letter-spacing:4px">Mercado Franquia</div>'
 
+_PLACEHOLDER = "___CARD_CONTENT___"
 _BASE = f"""<html><head>{_FONTS}</head><body style="margin:0;padding:0">
 <div style="width:1080px;height:1080px;background:linear-gradient(135deg,#0D0D0D 0%,#1A1A18 100%);position:relative;font-family:'Inter',system-ui,sans-serif;box-sizing:border-box;overflow:hidden">
 <!-- Logo -->
@@ -73,7 +74,7 @@ _BASE = f"""<html><head>{_FONTS}</head><body style="margin:0;padding:0">
 <div style="position:absolute;top:110px;left:60px;right:60px;height:1px;background:linear-gradient(90deg,#E8421A 0%,transparent 100%)"></div>
 <!-- Content -->
 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:160px 80px 100px;box-sizing:border-box">
-{{content}}
+{_PLACEHOLDER}
 </div>
 <!-- Bottom bar -->
 <div style="position:absolute;bottom:0;left:0;right:0;height:8px;background:#E8421A"></div>
@@ -82,7 +83,7 @@ _BASE = f"""<html><head>{_FONTS}</head><body style="margin:0;padding:0">
 
 
 def _card(content_html):
-    return _BASE.replace("{{content}}", content_html)
+    return _BASE.replace(_PLACEHOLDER, content_html)
 
 
 CARD_TEMPLATES = {

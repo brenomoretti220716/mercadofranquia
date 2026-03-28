@@ -37,8 +37,10 @@ IMAGES_DIR = Path(__file__).parent.parent / "static" / "imagens"
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _call_dalle(prompt, size="1536x1024"):
-    """Chama GPT Image 1.5 e retorna URL da imagem gerada."""
+def _generate_image(prompt, filepath, size="1536x1024"):
+    """Chama GPT Image 1.5, detecta formato de resposta e salva imagem."""
+    import base64 as b64mod
+
     req_data = json.dumps({
         "model": "gpt-image-1",
         "prompt": prompt,
@@ -60,21 +62,33 @@ def _call_dalle(prompt, size="1536x1024"):
     try:
         with urlopen(req, timeout=180, context=SSL_CTX) as resp:
             result = json.loads(resp.read().decode("utf-8"))
-        return result["data"][0]["url"]
     except HTTPError as e:
         body = e.read().decode("utf-8", errors="ignore")
-        print(f"    GPT Image HTTP {e.code}: {body[:200]}")
+        print(f"    GPT Image HTTP {e.code}: {body[:300]}")
         raise
 
+    item = result.get("data", [{}])[0]
+    print(f"    Resposta keys: {list(item.keys())}")
 
-def _download_and_save(url, filepath):
-    """Baixa imagem da URL (expira rápido) e salva localmente."""
-    req = Request(url)
-    with urlopen(req, timeout=60, context=SSL_CTX) as resp:
-        data = resp.read()
-    with open(filepath, "wb") as f:
-        f.write(data)
-    return len(data)
+    # Tentar b64_json primeiro (gpt-image-1 retorna isso por padrão)
+    if "b64_json" in item:
+        img_bytes = b64mod.b64decode(item["b64_json"])
+        with open(filepath, "wb") as f:
+            f.write(img_bytes)
+        return len(img_bytes)
+
+    # Fallback: URL (dall-e-3 e alguns modelos)
+    if "url" in item:
+        url = item["url"]
+        dl_req = Request(url)
+        with urlopen(dl_req, timeout=60, context=SSL_CTX) as dl_resp:
+            data = dl_resp.read()
+        with open(filepath, "wb") as f:
+            f.write(data)
+        return len(data)
+
+    print(f"    ERRO: formato de resposta desconhecido: {list(item.keys())}")
+    raise Exception(f"Formato desconhecido: {list(item.keys())}")
 
 
 def gerar_imagem_noticia(noticia_id):
@@ -99,9 +113,8 @@ def gerar_imagem_noticia(noticia_id):
     conn.close()
 
     try:
-        img_url = _call_dalle(prompt, "1536x1024")
         filepath = IMAGES_DIR / f"noticia_{noticia_id}.png"
-        size = _download_and_save(img_url, filepath)
+        size = _generate_image(prompt, filepath, "1536x1024")
         imagem_url = f"/static/imagens/noticia_{noticia_id}.png"
 
         conn = get_conn()
@@ -133,9 +146,8 @@ def gerar_imagem_card(card_id):
     prompt = f"Modern Brazilian business photography, square format. {row['imagem_prompt']}. Warm orange and dark color palette matching brand colors, NO TEXT, NO LOGOS, NO DOCUMENTS, clean minimal composition, professional lighting, high quality photorealistic."
 
     try:
-        img_url = _call_dalle(prompt, "1024x1024")
         filepath = IMAGES_DIR / f"card_{card_id}.png"
-        size = _download_and_save(img_url, filepath)
+        size = _generate_image(prompt, filepath, "1024x1024")
         imagem_url = f"/static/imagens/card_{card_id}.png"
 
         conn = get_conn()

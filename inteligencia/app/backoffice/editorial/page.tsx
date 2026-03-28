@@ -75,6 +75,23 @@ export default function EditorialPage() {
             return (
               <Card key={n.id} className="border-0 shadow-none" style={CS}>
                 <CardContent className="p-5">
+                  <div className="flex gap-4">
+                    {/* Thumbnail de imagem */}
+                    <div className="shrink-0" style={{ width: 120 }}>
+                      {n.imagem_url ? (
+                        <img src={`${API_URL}${n.imagem_url}`} alt="" style={{ width: 120, height: 68, objectFit: "cover", borderRadius: 6 }} />
+                      ) : n.imagem_status === "gerando" ? (
+                        <div className="flex items-center justify-center" style={{ width: 120, height: 68, background: "#F5F5F5", borderRadius: 6, fontSize: 11, color: "#999" }}>Gerando...</div>
+                      ) : (
+                        <button
+                          onClick={async () => { await fetch(`${API_URL}/api/imagens/gerar/noticia/${n.id}`, { method: "POST" }); setTimeout(fetchData, 5000) }}
+                          className="flex items-center justify-center" style={{ width: 120, height: 68, background: "#F8F8F8", borderRadius: 6, border: "1px dashed #DDD", fontSize: 11, color: "#999", cursor: "pointer" }}
+                        >
+                          Gerar imagem
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex-1">
                   <div className="flex items-center gap-2 mb-3 flex-wrap">
                     {n.segmento && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#FFF0ED", color: P }}>{n.segmento}</span>}
                     {n.fonte_original && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#F0F0F0", color: "#666" }}>{n.fonte_original}</span>}
@@ -123,6 +140,8 @@ export default function EditorialPage() {
                     onRefazer={() => setRefazerId(n.id)}
                     onVoltarRevisao={() => action(n.id, "aprovar")}
                   />
+                    </div>{/* close flex-1 */}
+                  </div>{/* close flex gap-4 */}
                 </CardContent>
               </Card>
             )

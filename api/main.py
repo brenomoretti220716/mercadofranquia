@@ -8,6 +8,7 @@ from database import get_conn, init_db, seed_historico, DB_PATH
 app = FastAPI(title="ABF Franquias Intelligence API")
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.on_event("startup")
 def startup():
@@ -1075,6 +1076,57 @@ def aprovar_carrossel(carrossel_id: int):
     conn.commit()
     conn.close()
     return {"status": "ok"}
+
+
+# ── IMAGENS DALL-E ───────────────────────────────────────────────────────
+
+@app.post("/api/imagens/gerar/noticia/{noticia_id}")
+def gerar_img_noticia(noticia_id: int):
+    import threading
+    def _run():
+        try:
+            from scrapers.gerar_imagem import gerar_imagem_noticia
+            gerar_imagem_noticia(noticia_id)
+        except Exception:
+            pass
+    threading.Thread(target=_run, daemon=True).start()
+    return {"status": "iniciado", "noticia_id": noticia_id}
+
+
+@app.post("/api/imagens/gerar/card/{card_id}")
+def gerar_img_card(card_id: int):
+    import threading
+    def _run():
+        try:
+            from scrapers.gerar_imagem import gerar_imagem_card
+            gerar_imagem_card(card_id)
+        except Exception:
+            pass
+    threading.Thread(target=_run, daemon=True).start()
+    return {"status": "iniciado", "card_id": card_id}
+
+
+@app.post("/api/imagens/gerar/todos")
+def gerar_img_todos():
+    import threading
+    def _run():
+        try:
+            from scrapers.gerar_imagem import gerar_todas
+            gerar_todas(tipo="todos", limite=20)
+        except Exception:
+            pass
+    threading.Thread(target=_run, daemon=True).start()
+    return {"status": "iniciado"}
+
+
+@app.get("/api/imagens/status")
+def imagens_status():
+    conn = get_conn()
+    com = conn.execute("SELECT COUNT(*) FROM noticias_fila WHERE imagem_status = 'gerado'").fetchone()[0]
+    sem = conn.execute("SELECT COUNT(*) FROM noticias_fila WHERE imagem_prompt IS NOT NULL AND (imagem_status IS NULL OR imagem_status = 'pendente')").fetchone()[0]
+    erro = conn.execute("SELECT COUNT(*) FROM noticias_fila WHERE imagem_status = 'erro'").fetchone()[0]
+    conn.close()
+    return {"com_imagem": com, "sem_imagem": sem, "erro": erro}
 
 
 @app.get("/")

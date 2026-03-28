@@ -9,10 +9,17 @@ import argparse
 import json
 import os
 import re
+import ssl
 import sys
 import time
 from datetime import datetime
 from urllib.request import urlopen, Request
+
+try:
+    import certifi
+    SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    SSL_CTX = ssl.create_default_context()
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from database import get_conn
@@ -84,7 +91,7 @@ def processar(limite=10):
                 method="POST",
             )
 
-            with urlopen(req, timeout=60) as resp:
+            with urlopen(req, timeout=60, context=SSL_CTX) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
 
             raw_text = result["content"][0]["text"]

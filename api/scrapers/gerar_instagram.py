@@ -217,8 +217,41 @@ def gerar_posts(limite=5):
     return total
 
 
+def regenerar_cards(limite=100):
+    """Re-renderiza card_html dos posts existentes com o template atual."""
+    conn = get_conn()
+    posts = conn.execute("SELECT id, tipo, dado_destaque, subtexto FROM posts_instagram ORDER BY id DESC LIMIT ?", (limite,)).fetchall()
+    if not posts:
+        print("Nenhum post para regenerar.")
+        return 0
+
+    print(f"\n{'='*60}")
+    print(f"  Regenerando {len(posts)} cards com novo design")
+    print(f"{'='*60}\n")
+
+    count = 0
+    for p in posts:
+        tipo = p["tipo"] or "dado_principal"
+        dado = p["dado_destaque"] or ""
+        sub = p["subtexto"] or ""
+        template_fn = CARD_TEMPLATES.get(tipo, CARD_TEMPLATES["dado_principal"])
+        card_html = template_fn(dado, sub)
+        conn.execute("UPDATE posts_instagram SET card_html = ? WHERE id = ?", (card_html, p["id"]))
+        count += 1
+
+    conn.commit()
+    conn.close()
+    print(f"  {count} cards atualizados.")
+    return count
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Gera posts Instagram")
     parser.add_argument("--limite", type=int, default=5, help="Limite de noticias")
+    parser.add_argument("--regenerar", action="store_true", help="Regenerar cards com novo design")
     args = parser.parse_args()
-    gerar_posts(limite=args.limite)
+
+    if args.regenerar:
+        regenerar_cards(limite=args.limite)
+    else:
+        gerar_posts(limite=args.limite)

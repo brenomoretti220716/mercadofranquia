@@ -142,7 +142,7 @@ def gerar_imagem_noticia(noticia_id):
         print(f"    Imagem ja gerada para noticia {noticia_id}")
         return None
 
-    prompt = montar_prompt(row["imagem_prompt"], row.get("segmento"))
+    prompt = montar_prompt(row["imagem_prompt"], row["segmento"] if "segmento" in row.keys() else None)
 
     conn = get_conn()
     conn.execute("UPDATE noticias_fila SET imagem_status = 'gerando' WHERE id = ?", (noticia_id,))
@@ -180,7 +180,7 @@ def gerar_imagem_card(card_id):
     if not row or not row["imagem_prompt"]:
         return None
 
-    prompt = montar_prompt(row["imagem_prompt"], row.get("segmento"))
+    prompt = montar_prompt(row["imagem_prompt"], row["segmento"] if "segmento" in row.keys() else None)
 
     try:
         filepath = IMAGES_DIR / f"card_{card_id}.png"

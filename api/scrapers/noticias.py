@@ -172,11 +172,39 @@ def parse_rss(url, fonte, idioma="en", limite=20):
         return []
 
 
+# ── Mapa das Franquias (WP REST API) ─────────────────────────────────────────
+
+def scrape_mapa(limite=20):
+    """Mapa das Franquias — WP REST API."""
+    fonte = "Mapa das Franquias"
+    try:
+        data = _fetch(f"https://mapadasfranquias.com.br/wp-json/wp/v2/posts?per_page={limite}", accept="application/json")
+        posts = json.loads(data)
+        noticias = []
+        for p in posts:
+            titulo = _clean(p.get("title", {}).get("rendered", ""))
+            link = p.get("link", "")
+            resumo = _clean(p.get("excerpt", {}).get("rendered", ""))
+            conteudo = _clean(p.get("content", {}).get("rendered", ""))
+            data_pub = p.get("date", "")[:10]
+            if titulo and link and "/noticia/" in link:
+                noticias.append({
+                    "titulo": titulo, "url": link, "resumo": resumo, "conteudo": conteudo,
+                    "fonte": fonte, "url_fonte": "https://mapadasfranquias.com.br/",
+                    "idioma": "pt", "data": data_pub,
+                })
+        return noticias
+    except Exception as e:
+        print(f"  [ERRO] {fonte}: {e}")
+        return []
+
+
 # ── FONTES ───────────────────────────────────────────────────────────────────
 
 FONTES = {
     "abf": {"nome": "ABF Noticias", "fn": scrape_abf},
     "portal": {"nome": "Portal do Franchising", "fn": scrape_portal},
+    "mapa": {"nome": "Mapa das Franquias", "fn": scrape_mapa},
     "entrepreneur": {"nome": "Entrepreneur Franchises", "fn": lambda l: parse_rss("https://www.entrepreneur.com/topic/franchises/feed", "Entrepreneur", "en", l)},
     "franchisewire": {"nome": "FranchiseWire", "fn": lambda l: parse_rss("https://www.franchisewire.com/feed/", "FranchiseWire", "en", l)},
 }

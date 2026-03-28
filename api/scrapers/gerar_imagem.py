@@ -37,15 +37,14 @@ IMAGES_DIR = Path(__file__).parent.parent / "static" / "imagens"
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _call_dalle(prompt, size="1792x1024"):
-    """Chama DALL-E 3 e retorna URL da imagem gerada."""
+def _call_dalle(prompt, size="1536x1024"):
+    """Chama GPT Image 1.5 e retorna URL da imagem gerada."""
     req_data = json.dumps({
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": prompt,
         "n": 1,
         "size": size,
-        "quality": "hd",
-        "style": "natural",
+        "quality": "high",
     }).encode("utf-8")
 
     req = Request(
@@ -100,7 +99,7 @@ def gerar_imagem_noticia(noticia_id):
     conn.close()
 
     try:
-        url = _call_dalle(prompt, "1792x1024")
+        url = _call_dalle(prompt, "1536x1024")
         filepath = IMAGES_DIR / f"noticia_{noticia_id}.png"
         size = _download(url, filepath)
         imagem_url = f"/static/imagens/noticia_{noticia_id}.png"

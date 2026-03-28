@@ -14,6 +14,7 @@ import sys
 import time
 from datetime import datetime
 from urllib.request import urlopen, Request
+from urllib.error import HTTPError
 
 try:
     import certifi
@@ -75,7 +76,7 @@ def processar(limite=10):
         try:
             req_data = json.dumps({
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 2000,
+                "max_tokens": 1500,
                 "system": SYSTEM_PROMPT,
                 "messages": [{"role": "user", "content": user_msg}],
             }).encode("utf-8")
@@ -84,15 +85,20 @@ def processar(limite=10):
                 "https://api.anthropic.com/v1/messages",
                 data=req_data,
                 headers={
-                    "Content-Type": "application/json",
+                    "content-type": "application/json",
                     "x-api-key": ANTHROPIC_API_KEY,
                     "anthropic-version": "2023-06-01",
                 },
                 method="POST",
             )
 
-            with urlopen(req, timeout=60, context=SSL_CTX) as resp:
-                result = json.loads(resp.read().decode("utf-8"))
+            try:
+                with urlopen(req, timeout=60, context=SSL_CTX) as resp:
+                    result = json.loads(resp.read().decode("utf-8"))
+            except HTTPError as http_err:
+                body = http_err.read().decode("utf-8", errors="ignore")
+                print(f"    API HTTP {http_err.code}: {body[:200]}")
+                raise Exception(f"API HTTP {http_err.code}")
 
             raw_text = result["content"][0]["text"]
             raw_text = re.sub(r"```json|```", "", raw_text).strip()

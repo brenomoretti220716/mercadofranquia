@@ -38,15 +38,13 @@ IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _call_dalle(prompt, size="1536x1024"):
-    """Chama GPT Image 1.5 e retorna bytes da imagem (base64 decoded)."""
-    import base64 as b64mod
+    """Chama GPT Image 1.5 e retorna URL da imagem gerada."""
     req_data = json.dumps({
         "model": "gpt-image-1",
         "prompt": prompt,
         "n": 1,
         "size": size,
         "quality": "high",
-        "response_format": "b64_json",
     }).encode("utf-8")
 
     req = Request(
@@ -62,19 +60,21 @@ def _call_dalle(prompt, size="1536x1024"):
     try:
         with urlopen(req, timeout=180, context=SSL_CTX) as resp:
             result = json.loads(resp.read().decode("utf-8"))
-        b64_data = result["data"][0]["b64_json"]
-        return b64mod.b64decode(b64_data)
+        return result["data"][0]["url"]
     except HTTPError as e:
         body = e.read().decode("utf-8", errors="ignore")
         print(f"    GPT Image HTTP {e.code}: {body[:200]}")
         raise
 
 
-def _save_image(img_bytes, filepath):
-    """Salva bytes da imagem em arquivo."""
+def _download_and_save(url, filepath):
+    """Baixa imagem da URL (expira rápido) e salva localmente."""
+    req = Request(url)
+    with urlopen(req, timeout=60, context=SSL_CTX) as resp:
+        data = resp.read()
     with open(filepath, "wb") as f:
-        f.write(img_bytes)
-    return len(img_bytes)
+        f.write(data)
+    return len(data)
 
 
 def gerar_imagem_noticia(noticia_id):
@@ -99,9 +99,9 @@ def gerar_imagem_noticia(noticia_id):
     conn.close()
 
     try:
-        img_bytes = _call_dalle(prompt, "1536x1024")
+        img_url = _call_dalle(prompt, "1536x1024")
         filepath = IMAGES_DIR / f"noticia_{noticia_id}.png"
-        size = _save_image(img_bytes, filepath)
+        size = _download_and_save(img_url, filepath)
         imagem_url = f"/static/imagens/noticia_{noticia_id}.png"
 
         conn = get_conn()
@@ -133,9 +133,9 @@ def gerar_imagem_card(card_id):
     prompt = f"Modern Brazilian business photography, square format. {row['imagem_prompt']}. Warm orange and dark color palette matching brand colors, NO TEXT, NO LOGOS, NO DOCUMENTS, clean minimal composition, professional lighting, high quality photorealistic."
 
     try:
-        img_bytes = _call_dalle(prompt, "1024x1024")
+        img_url = _call_dalle(prompt, "1024x1024")
         filepath = IMAGES_DIR / f"card_{card_id}.png"
-        size = _save_image(img_bytes, filepath)
+        size = _download_and_save(img_url, filepath)
         imagem_url = f"/static/imagens/card_{card_id}.png"
 
         conn = get_conn()

@@ -36,6 +36,43 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 IMAGES_DIR = Path(__file__).parent.parent / "static" / "imagens"
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
+# ── Prompts por segmento ABF ────────────────────────────────────────────
+
+PROMPTS_SEGMENTO = {
+    "Saude/Beleza": "Modern Brazilian beauty salon or wellness clinic, bright natural lighting, clean white and warm tones, professional aesthetician at work, happy Brazilian client, upscale storefront",
+    "Saúde, Beleza e Bem-Estar": "Modern Brazilian beauty salon or wellness clinic, bright natural lighting, clean white and warm tones, professional aesthetician at work, happy Brazilian client, upscale storefront",
+    "Alimentação - FS": "Busy modern Brazilian restaurant franchise, bright warm lighting, food preparation area, friendly staff in uniform, colorful fresh food display, lunchtime atmosphere",
+    "Alimentacao-FS": "Busy modern Brazilian restaurant franchise, bright warm lighting, food preparation area, friendly staff in uniform, colorful fresh food display, lunchtime atmosphere",
+    "Alimentação - CD": "Brazilian food distribution operation, organized warehouse shelves, logistics in action, professional workers, delivery vehicles outside, modern supply chain",
+    "Alimentacao-CD": "Brazilian food distribution operation, organized warehouse shelves, logistics in action, professional workers, delivery vehicles outside, modern supply chain",
+    "Educação": "Modern Brazilian learning center, bright colorful classroom, engaged students and instructor, tablets and modern materials, motivated young Brazilians studying",
+    "Educacao": "Modern Brazilian learning center, bright colorful classroom, engaged students and instructor, tablets and modern materials, motivated young Brazilians studying",
+    "Casa e Construção": "Brazilian home improvement franchise showroom, well-organized materials display, professional consultant helping customer, bright lighting, modern design samples",
+    "Casa e Construcao": "Brazilian home improvement franchise showroom, well-organized materials display, professional consultant helping customer, bright lighting, modern design samples",
+    "Moda": "Stylish Brazilian fashion franchise boutique, well-lit modern store, organized clothing displays, fashionable Brazilian customers, contemporary retail design",
+    "Hotelaria e Turismo": "Modern Brazilian hotel lobby, bright welcoming reception, friendly staff, Brazilian travelers, contemporary design with local cultural elements",
+    "Serviços Automotivos": "Clean modern Brazilian auto service franchise, bright organized garage, professional mechanics in uniforms, modern equipment, suburban commercial area",
+    "Servicos Automotivos": "Clean modern Brazilian auto service franchise, bright organized garage, professional mechanics in uniforms, modern equipment, suburban commercial area",
+    "Comunicação/TI": "Modern Brazilian tech franchise store, bright contemporary retail, digital displays, friendly tech consultant, clean minimalist design, urban setting",
+    "Comunicacao/TI": "Modern Brazilian tech franchise store, bright contemporary retail, digital displays, friendly tech consultant, clean minimalist design, urban setting",
+    "Entretenimento e Lazer": "Vibrant Brazilian entertainment franchise, colorful energetic environment, happy Brazilian families, bright playful atmosphere, modern recreational facility",
+    "Limpeza e Conservação": "Professional Brazilian cleaning franchise team in action, bright clean environment, modern equipment, uniformed team, commercial building setting",
+    "Limpeza e Conservacao": "Professional Brazilian cleaning franchise team in action, bright clean environment, modern equipment, uniformed team, commercial building setting",
+    "Serviços e Outros Negócios": "Professional Brazilian business services franchise office, bright modern workspace, consultant meeting client, contemporary office design",
+    "Servicos e Outros Negocios": "Professional Brazilian business services franchise office, bright modern workspace, consultant meeting client, contemporary office design",
+}
+
+PROMPT_PADRAO = "Professional Brazilian franchise business, bright natural lighting, modern commercial setting, friendly staff, clean contemporary design, urban Brazilian neighborhood"
+
+REGRAS_GLOBAIS = "REQUIREMENTS: Bright well-lit environment, natural daylight, Brazilian people, photorealistic editorial photography, NO text NO logos NO signs with readable text, NO stock photo poses, high resolution sharp focus, warm color temperature, real business environment NOT staged"
+
+
+def montar_prompt(imagem_prompt, segmento=None):
+    """Monta prompt completo com base visual do segmento + contexto da notícia."""
+    base = PROMPTS_SEGMENTO.get(segmento or "", PROMPT_PADRAO)
+    contexto = (imagem_prompt or "").strip()
+    return f"{base}. {contexto}. {REGRAS_GLOBAIS}"[:4000]
+
 
 def _generate_image(prompt, filepath, size="1536x1024"):
     """Chama GPT Image 1.5, detecta formato de resposta e salva imagem."""
@@ -92,9 +129,9 @@ def _generate_image(prompt, filepath, size="1536x1024"):
 
 
 def gerar_imagem_noticia(noticia_id):
-    """Gera imagem para uma notícia."""
+    """Gera imagem para uma notícia usando prompt do segmento."""
     conn = get_conn()
-    row = conn.execute("SELECT imagem_prompt, imagem_status FROM noticias_fila WHERE id = ?", (noticia_id,)).fetchone()
+    row = conn.execute("SELECT imagem_prompt, imagem_status, segmento FROM noticias_fila WHERE id = ?", (noticia_id,)).fetchone()
     conn.close()
 
     if not row or not row["imagem_prompt"]:
@@ -105,7 +142,7 @@ def gerar_imagem_noticia(noticia_id):
         print(f"    Imagem ja gerada para noticia {noticia_id}")
         return None
 
-    prompt = f"Professional editorial photography for Brazilian business magazine. {row['imagem_prompt']}. Visual style: warm tones with orange and dark accents, cinematic lighting, shallow depth of field, NO TEXT, NO DOCUMENTS WITH TEXT, NO SCREENS WITH TEXT, clean surfaces, modern Brazilian business environment, Bloomberg/Economist editorial aesthetic, high contrast, photorealistic, 8K quality."
+    prompt = montar_prompt(row["imagem_prompt"], row.get("segmento"))
 
     conn = get_conn()
     conn.execute("UPDATE noticias_fila SET imagem_status = 'gerando' WHERE id = ?", (noticia_id,))
@@ -135,15 +172,15 @@ def gerar_imagem_noticia(noticia_id):
 
 
 def gerar_imagem_card(card_id):
-    """Gera imagem para card Instagram."""
+    """Gera imagem para card Instagram usando prompt do segmento."""
     conn = get_conn()
-    row = conn.execute("SELECT p.id, f.imagem_prompt FROM posts_instagram p LEFT JOIN noticias_fila f ON p.noticia_id = f.id WHERE p.id = ?", (card_id,)).fetchone()
+    row = conn.execute("SELECT p.id, f.imagem_prompt, f.segmento FROM posts_instagram p LEFT JOIN noticias_fila f ON p.noticia_id = f.id WHERE p.id = ?", (card_id,)).fetchone()
     conn.close()
 
     if not row or not row["imagem_prompt"]:
         return None
 
-    prompt = f"Modern Brazilian business photography, square format. {row['imagem_prompt']}. Warm orange and dark color palette matching brand colors, NO TEXT, NO LOGOS, NO DOCUMENTS, clean minimal composition, professional lighting, high quality photorealistic."
+    prompt = montar_prompt(row["imagem_prompt"], row.get("segmento"))
 
     try:
         filepath = IMAGES_DIR / f"card_{card_id}.png"

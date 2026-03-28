@@ -92,7 +92,7 @@ def gerar_imagem_noticia(noticia_id):
         print(f"    Imagem ja gerada para noticia {noticia_id}")
         return None
 
-    prompt = f"Professional business photography, Brazilian franchise market, {row['imagem_prompt']}. Style: editorial, Bloomberg/Economist aesthetic, high contrast, cinematic lighting, no text, no logos, photorealistic, 4K quality."
+    prompt = f"Professional editorial photography for Brazilian business magazine. {row['imagem_prompt']}. Visual style: warm tones with orange and dark accents, cinematic lighting, shallow depth of field, NO TEXT, NO DOCUMENTS WITH TEXT, NO SCREENS WITH TEXT, clean surfaces, modern Brazilian business environment, Bloomberg/Economist editorial aesthetic, high contrast, photorealistic, 8K quality."
 
     conn = get_conn()
     conn.execute("UPDATE noticias_fila SET imagem_status = 'gerando' WHERE id = ?", (noticia_id,))
@@ -131,7 +131,7 @@ def gerar_imagem_card(card_id):
     if not row or not row["imagem_prompt"]:
         return None
 
-    prompt = f"Modern Brazilian business environment, {row['imagem_prompt']}. Style: clean, professional, vibrant colors with orange accents, no text, no logos, high quality photography."
+    prompt = f"Modern Brazilian business photography, square format. {row['imagem_prompt']}. Warm orange and dark color palette matching brand colors, NO TEXT, NO LOGOS, NO DOCUMENTS, clean minimal composition, professional lighting, high quality photorealistic."
 
     try:
         url = _call_dalle(prompt, "1024x1024")

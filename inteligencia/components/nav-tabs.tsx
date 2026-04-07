@@ -1,0 +1,127 @@
+"use client"
+
+import { useState, useCallback } from "react"
+import { TabVisaoGeral } from "@/components/tabs/tab-visao-geral"
+import { TabSegmentos } from "@/components/tabs/tab-segmentos"
+import { TabCenario } from "@/components/tabs/tab-cenario"
+import { TabEmpregos } from "@/components/tabs/tab-empregos"
+import { TabProjecoes } from "@/components/tabs/tab-projecoes"
+
+const TABS = [
+  { id: "visao-geral", label: "Visao Geral" },
+  { id: "segmentos", label: "Segmentos ABF" },
+  { id: "cenario", label: "Cenario Economico" },
+  { id: "empregos", label: "Empregos e Crescimento" },
+  { id: "projecoes", label: "Projecoes" },
+] as const
+
+type TabId = (typeof TABS)[number]["id"]
+
+export interface AllData {
+  kpis: { label: string; valor: string; sub: string; cor: string }[]
+  serieAnual: { periodo: string; valor_bi: number; parcial?: boolean }[]
+  segmentos: any[]
+  segmentosAnual: any[]
+  projecoes: any[]
+  ranking: any[]
+  serieEmpregos: { ano: string; empregos: number; empregos_mi: number }[]
+  indicadores: any[]
+  anual: any[]
+  selic: any
+  ipca: any
+  dolar: any
+  desemprego: any
+  pibTrimestral: any
+  pibEstado: any
+  pmcData: any
+  cagedComercio: any
+  cagedServicos: any
+  cagedAlojamento: any
+  cagedTotal: any
+  consumidorPainel: any
+  empregosAbf: number | null
+  trimestrais: any[]
+}
+
+export default function NavTabs({ data }: { data: AllData }) {
+  const [activeTab, setActiveTab] = useState<TabId>("visao-geral")
+
+  const goToTab = useCallback((tabId: string) => {
+    setActiveTab(tabId as TabId)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }, [])
+
+  return (
+    <>
+      <div className="flex gap-1.5 overflow-x-auto mb-6 p-1" style={{ background: "#F0F0F0", borderRadius: 10 }}>
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className="px-4 py-2 text-xs font-semibold whitespace-nowrap transition-all shrink-0"
+            style={{
+              background: activeTab === tab.id ? "#E8421A" : "transparent",
+              color: activeTab === tab.id ? "#fff" : "#666",
+              borderRadius: 8,
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "visao-geral" && (
+        <TabVisaoGeral
+          kpis={data.kpis}
+          serieAnual={data.serieAnual}
+          segmentos={data.segmentos}
+          serieEmpregos={data.serieEmpregos}
+          indicadores={data.indicadores}
+          anual={data.anual}
+          pibTrimestral={data.pibTrimestral}
+          pibEstado={data.pibEstado}
+          selic={data.selic}
+          ipca={data.ipca}
+          desemprego={data.desemprego}
+          consumidorPainel={data.consumidorPainel}
+          projecoes={data.projecoes}
+          trimestrais={data.trimestrais}
+          onTabChange={goToTab}
+        />
+      )}
+      {activeTab === "segmentos" && (
+        <TabSegmentos
+          segmentos={data.segmentos}
+          segmentosAnual={data.segmentosAnual}
+          pmcData={data.pmcData}
+        />
+      )}
+      {activeTab === "cenario" && (
+        <TabCenario
+          selic={data.selic}
+          ipca={data.ipca}
+          dolar={data.dolar}
+          desemprego={data.desemprego}
+          consumidorPainel={data.consumidorPainel}
+          cagedComercio={data.cagedComercio}
+          cagedServicos={data.cagedServicos}
+          cagedAlojamento={data.cagedAlojamento}
+          cagedTotal={data.cagedTotal}
+          empregosAbf={data.empregosAbf}
+          indicadores={data.indicadores}
+        />
+      )}
+      {activeTab === "empregos" && (
+        <TabEmpregos
+          indicadores={data.indicadores}
+          cagedAlojamento={data.cagedAlojamento}
+          cagedTotal={data.cagedTotal}
+          empregosAbf={data.empregosAbf}
+        />
+      )}
+      {activeTab === "projecoes" && (
+        <TabProjecoes projecoes={data.projecoes} />
+      )}
+    </>
+  )
+}

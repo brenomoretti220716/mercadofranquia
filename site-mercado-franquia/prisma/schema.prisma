@@ -1,0 +1,385 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String              @id @default(uuid())
+  name              String
+  email             String              @unique
+  password          String
+  role              Role                @default(MEMBER)
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  cpf               String?             @unique
+  phone             String              @unique
+  favorites         Favorite[]
+  ownedFranchises   Franchise[]         @relation("FranchiseOwner")
+  reviewedRequests  FranchisorRequest[] @relation("ReviewedRequests")
+  franchisorRequest FranchisorRequest?
+  franchisorProfile FranchisorUser?
+  notifications     Notification[]
+  reviews           Review[]            @relation("UserReviews")
+  reviewResponses   ReviewResponse[]
+  profile           UserProfile?
+  franchiseeOf      Franchise[]         @relation("FranchiseFranchisees")
+  newsComments      NewsComment[]
+  quizSubmission    QuizSubmission?
+}
+
+model UserVerification {
+  id        Int       @id @default(autoincrement())
+  email     String
+  code      String    @db.VarChar(6)
+  expiresAt DateTime
+  isUsed    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  usedAt    DateTime?
+  userData  String?   @db.Text
+}
+
+model UserProfile {
+  id              String @id @default(uuid())
+  userId          String @unique
+  city            String
+  interestSectors String
+  interestRegion  String
+  investmentRange String
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FranchisorUser {
+  id                 String   @id @default(uuid())
+  streamName         String
+  userId             String   @unique
+  cnpj               String   @unique
+  responsable        String
+  responsableRole    String
+  commercialEmail    String
+  commercialPhone    String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  cnpjCardPath       String?
+  socialContractPath String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FranchisorRequest {
+  id                 String                  @id @default(uuid())
+  userId             String                  @unique
+  streamName         String
+  cnpj               String                  @unique
+  cnpjCardPath       String
+  socialContractPath String
+  responsable        String
+  responsableRole    String
+  commercialEmail    String
+  commercialPhone    String
+  status             FranchisorRequestStatus @default(PENDING)
+  rejectionReason    String?                 @db.Text
+  reviewedBy         String?
+  reviewedAt         DateTime?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  reviewer           User?                   @relation("ReviewedRequests", fields: [reviewedBy], references: [id])
+  user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+  @@index([reviewedBy], map: "FranchisorRequest_reviewedBy_fkey")
+}
+
+model News {
+  id        String        @id @default(cuid())
+  title     String        @db.Text
+  category  String
+  summary   String        @db.Text
+  content   String        @db.Text
+  photoUrl  String?
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  comments  NewsComment[]
+}
+
+model Franchise {
+  id                        String                  @id @default(cuid())
+  name                      String
+  slug                      String?                 @unique
+  headquarterState          String?
+  segment                   String?
+  subsegment                String?
+  businessType              String?                 @db.Text
+  franchiseStartYear        Int?
+  abfSince                  Int?
+  videoUrl                  String?                 @db.Text
+  updatedAt                 DateTime                @updatedAt
+  createdAt                 DateTime                @default(now())
+  contactId                 Int?                    @unique
+  ownerId                   String?
+  isActive                  Boolean                 @default(true)
+  brandFoundationYear       Int?
+  description               String?                 @db.Text
+  detailedDescription       String?                 @db.Text
+  headquarter               String?
+  isAbfAssociated           Boolean?
+  logoUrl                   String?
+  totalUnits                Int?
+  totalUnitsInBrazil        Int?
+  thumbnailUrl              String?
+  lastScrapedAt             DateTime?
+  scrapedWebsite            String?
+  calculationBaseAdFee      String?
+  calculationBaseRoyaltie   String?
+  galleryUrls               String?                 @db.Text
+  isReview                  Boolean                 @default(true)
+  averageRating             Float?
+  ratingSum                 Int                     @default(0)
+  reviewCount               Int                     @default(0)
+  unitsEvolution            UnitsEvolution?
+  favoritesCount            Int                     @default(0)
+  isSponsored               Boolean                 @default(false)
+  sponsorPlacements         Json                    @default("[]")
+  
+  // Investment Range (NEW - replaces old minimumInvestment/totalInvestment string/numeric fields)
+  minimumInvestment         Decimal?                @db.Decimal(15, 2)
+  maximumInvestment         Decimal?                @db.Decimal(15, 2)
+  
+  // ROI Range (NEW - replaces old returnOnInvestment string/numeric fields)
+  minimumReturnOnInvestment Int?                    // months
+  maximumReturnOnInvestment Int?                    // months
+  
+  // Single Numeric Fields (replace old string/*Numeric dual fields)
+  franchiseFee              Decimal?                @db.Decimal(15, 2)
+  averageMonthlyRevenue     Decimal?                @db.Decimal(15, 2)
+  royalties                 Decimal?                @db.Decimal(5, 2)  // percentage
+  advertisingFee            Decimal?                @db.Decimal(5, 2)  // percentage
+  setupCapital              Decimal?                @db.Decimal(15, 2)
+  workingCapital            Decimal?                @db.Decimal(15, 2)
+  storeArea                 Int?                    // square meters
+  
+  // Relations
+  businessModels            BusinessModel[]
+  favorites                 Favorite[]
+  contact                   ContactInfo?            @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  owner                     User?                   @relation("FranchiseOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  monthlyUnits              FranchiseMonthlyUnits[]
+  reviews                   Review[]
+  franchisees               User[]                  @relation("FranchiseFranchisees")
+
+  @@index([segment])
+  @@index([slug])
+  @@index([totalUnits])
+  @@index([averageRating])
+  @@index([minimumInvestment])
+  @@index([maximumInvestment])
+  @@index([franchiseFee])
+  @@index([averageMonthlyRevenue])
+  @@index([minimumReturnOnInvestment])
+  @@index([isActive])
+  @@index([isActive, segment])
+  @@index([isActive, totalUnits])
+  @@index([isSponsored])
+  @@index([isActive, isSponsored])
+  @@index([ownerId], map: "Franchise_ownerId_fkey")
+}
+
+model BusinessModel {
+  id          String    @id @default(cuid())
+  name        String
+  description String    @db.Text
+  photoUrl    String
+  franchiseId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  franchise   Franchise @relation(fields: [franchiseId], references: [id], onDelete: Cascade)
+
+  @@index([franchiseId])
+}
+
+model ContactInfo {
+  id       Int        @id @default(autoincrement())
+  phone    String
+  email    String
+  website  String?    @db.Text
+  frachise Franchise?
+}
+
+model Review {
+  id           Int              @id @default(autoincrement())
+  anonymous    Boolean
+  rating       Int
+  comment      String           @db.Text
+  createdAt    DateTime         @default(now())
+  franchiseId  String
+  isActive     Boolean          @default(true)
+  isFranchisee Boolean          @default(false)
+  authorId     String
+  author       User             @relation("UserReviews", fields: [authorId], references: [id], onDelete: Cascade)
+  franchise    Franchise        @relation(fields: [franchiseId], references: [id], onDelete: Cascade)
+  responses    ReviewResponse[]
+
+  @@index([authorId], map: "Review_authorId_fkey")
+  @@index([franchiseId], map: "Review_franchiseId_fkey")
+}
+
+model ReviewResponse {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reviewId  Int
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([authorId], map: "ReviewResponse_authorId_fkey")
+  @@index([reviewId], map: "ReviewResponse_reviewId_fkey")
+}
+
+model FranchiseMonthlyUnits {
+  id          String    @id @default(cuid())
+  franchiseId String
+  period      DateTime
+  units       Int?
+  collectedAt DateTime  @default(now())
+  source      String?
+  franchise   Franchise @relation(fields: [franchiseId], references: [id], onDelete: Cascade)
+
+  @@unique([franchiseId, period])
+  @@index([period, franchiseId])
+  @@index([franchiseId, period])
+}
+
+model Favorite {
+  id          String    @id @default(cuid())
+  userId      String
+  franchiseId String
+  createdAt   DateTime  @default(now())
+  franchise   Franchise @relation(fields: [franchiseId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, franchiseId])
+  @@index([userId])
+  @@index([franchiseId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String           @db.Text
+  type      NotificationType
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+model PlatformStatistics {
+  id                Int      @id @default(1)
+  franchisesReviewed Int     @default(0)
+  totalReviews       Int     @default(0)
+  totalSegments      Int     @default(0)
+  medianRating       Float?
+  updatedAt          DateTime @updatedAt
+}
+
+model NewsComment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  newsId    String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  news      News     @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  @@index([newsId])
+  @@index([authorId])
+}
+
+model QuizSubmission {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  answers   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AbfSegmentEntry {
+  id        String   @id @default(cuid())
+  year      Int
+  quarter   String   @db.VarChar(2) // "Q4", extensível para Q1/Q2/Q3
+  segment   String
+  acronym   String   @db.VarChar(10)
+  value     Int // R$ MM
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([year, quarter, acronym])
+  @@index([year, quarter])
+}
+
+model RankingBigNumber {
+  id               String   @id @default(cuid())
+  name             String
+  position         Int
+  growthPercentage Decimal  @db.Decimal(5, 2)
+  isWorst          Boolean  @default(false)
+  isHidden         Boolean  @default(false)
+  year             Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([year, position])
+  @@index([year])
+  @@map("RankingBugnumber")
+}
+
+enum Role {
+  ADMIN
+  FRANCHISOR
+  FRANCHISEE
+  CANDIDATE
+  ENTHUSIAST
+  MEMBER
+}
+
+enum FranchisorRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  UNDER_REVIEW
+}
+
+enum UnitsEvolution {
+  UP
+  DOWN
+  MAINTAIN
+}
+
+enum NotificationType {
+  MEMBER_REGISTRATION
+  FRANCHISOR_REQUEST
+  REQUEST_APPROVED
+  REQUEST_REJECTED
+  SYSTEM
+}
+
+enum SponsorPlacement {
+  HOME_DESTAQUES
+  RANKING_CATEGORIA
+  QUIZ
+}

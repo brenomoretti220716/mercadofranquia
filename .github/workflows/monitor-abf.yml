@@ -1,0 +1,123 @@
+name: Monitor novo relatório ABF
+
+on:
+  schedule:
+    - cron: '0 9 * * 1,4'  # Segunda e quinta às 9h UTC
+  workflow_dispatch: {}
+
+jobs:
+  verificar-abf:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verificar novo relatório ABF
+        id: check
+        env:
+          GH_OUTPUT: ${{ github.output }}
+        run: |
+          python3 << PYEOF
+          import json, os, re, sys
+          from urllib.request import urlopen, Request
+          from datetime import datetime
+
+          URL = "https://www.abf.com.br/inteligencia-de-mercado/"
+          HEADERS = {"User-Agent": "MercadoFranquia-Monitor/1.0"}
+
+          PERIODOS_CONHECIDOS = [
+              "4T2025", "3T2025", "1T2025",
+              "4T2024", "3T2024", "2T2024", "1T2024",
+              "4T2023", "3T2023",
+          ]
+
+          def periodo_para_data(p):
+              tri = int(p[0])
+              ano = int(p[2:])
+              return datetime(ano, tri * 3, 28)
+
+          ultimo_conhecido = max(PERIODOS_CONHECIDOS, key=periodo_para_data)
+          ultimo_data = periodo_para_data(ultimo_conhecido)
+          print(f"Ultimo periodo conhecido: {ultimo_conhecido}")
+
+          try:
+              req = Request(URL, headers=HEADERS)
+              html = urlopen(req, timeout=30).read().decode("utf-8", errors="ignore")
+          except Exception as e:
+              print(f"Erro ao acessar ABF: {e}")
+              sys.exit(1)
+
+          padrao_periodo = re.findall(r"[1-4]T20[2-3]\d", html)
+          padrao_pdf = re.findall(r'href="([^"]*\.pdf[^"]*)"', html, re.IGNORECASE)
+
+          periodos_encontrados = list(set(padrao_periodo))
+          novos = [p for p in periodos_encontrados if p not in PERIODOS_CONHECIDOS and periodo_para_data(p) > ultimo_data]
+          novos.sort(key=periodo_para_data, reverse=True)
+
+          pdfs_relevantes = [pdf for pdf in padrao_pdf if any(k in pdf.lower() for k in ["desempenho", "franchising", "trimestre"])]
+
+          with open("check-result.json", "w") as f:
+              json.dump({"novos": novos, "pdfs": pdfs_relevantes[:5], "todos_periodos": periodos_encontrados}, f)
+
+          if novos:
+              print(f"NOVO RELATORIO ENCONTRADO: {', '.join(novos)}")
+          else:
+              print("Nenhum novo relatorio encontrado.")
+          PYEOF
+
+          # Exportar resultado
+          if [ -f check-result.json ]; then
+            NOVOS=$(python3 -c "import json; d=json.load(open('check-result.json')); print(','.join(d['novos']))")
+            echo "novos=$NOVOS" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Criar issue se novo relatório
+        if: steps.check.outputs.novos != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let result = {};
+            try {
+              result = JSON.parse(fs.readFileSync('check-result.json', 'utf8'));
+            } catch {}
+
+            const novos = result.novos || [];
+            const pdfs = result.pdfs || [];
+            const periodo = novos[0] || 'desconhecido';
+
+            const pdfLinks = pdfs.length > 0
+              ? pdfs.map(p => `- ${p}`).join('\n')
+              : '_Nenhum PDF detectado automaticamente_';
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Novo relatório ABF disponível: ${periodo}`,
+              body: [
+                `## Novo relatório ABF detectado`,
+                ``,
+                `**Períodos novos:** ${novos.join(', ')}`,
+                `**Página ABF:** https://www.abf.com.br/inteligencia-de-mercado/`,
+                ``,
+                `### PDFs encontrados`,
+                pdfLinks,
+                ``,
+                `### Próximos passos`,
+                `- [ ] Baixar o PDF do relatório`,
+                `- [ ] Upload no backoffice: /admin/upload`,
+                `- [ ] Revisar dados extraídos pela IA`,
+                `- [ ] Publicar relatório`,
+                ``,
+                `_Detectado automaticamente pelo monitor ABF_`,
+              ].join('\n'),
+              labels: ['dados', 'abf']
+            });

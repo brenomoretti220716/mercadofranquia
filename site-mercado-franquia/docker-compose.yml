@@ -1,0 +1,32 @@
+services:
+  backend:
+    build: .
+    container_name: backend
+    restart: unless-stopped
+
+    environment:
+      # Porta interna do NestJS
+      PORT: ${PORT:-4000}
+      # Banco de dados
+      DATABASE_URL: ${DATABASE_URL:-"mysql://franchise_user:franchise_password@mysql_db:3306/franchise_db"}
+      # Redis
+      REDIS_HOST: redis_db
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-franchise_redis_2025}
+      # Outras variáveis do NestJS (JWT, API keys, etc)
+      NODE_ENV: ${NODE_ENV:-development}
+
+    command: npm run start:prod  # ou start:dev para desenvolvimento
+
+    volumes:
+      - ./uploads:/app/uploads
+
+    networks:
+      - proxy_net
+      - db_net
+
+networks:
+  proxy_net:
+    external: true
+  db_net:
+    external: true

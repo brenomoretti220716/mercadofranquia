@@ -1,0 +1,99 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Extrai o nome do repositorio (franchise-api)
+      - name: Extract repository name
+        run: echo "REPO_NAME=$(echo ${GITHUB_REPOSITORY} | cut -d '/' -f 2)" >> $GITHUB_ENV
+
+      # Escolhe VPS ou EC2 e configura autenticação
+      - name: Detect environment
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "ENV=prod" >> $GITHUB_ENV
+            echo "BRANCH=main" >> $GITHUB_ENV
+            echo "SSH_FINAL_HOST=${{ secrets.SSH_HOST_EC2 }}" >> $GITHUB_ENV
+            echo "SSH_FINAL_USER=${{ secrets.SSH_USERNAME_EC2 }}" >> $GITHUB_ENV
+            echo "SSH_FINAL_PORT=22" >> $GITHUB_ENV
+            echo "DEPLOY_PATH=/opt/mercadofranquia/app-back" >> $GITHUB_ENV
+            echo "USE_SSH_KEY=true" >> $GITHUB_ENV
+          else
+            echo "ENV=dev" >> $GITHUB_ENV
+            echo "BRANCH=dev" >> $GITHUB_ENV
+            echo "SSH_FINAL_HOST=${{ secrets.SSH_HOST }}" >> $GITHUB_ENV
+            echo "SSH_FINAL_USER=${{ secrets.SSH_USERNAME }}" >> $GITHUB_ENV
+            echo "SSH_FINAL_PASSWORD=${{ secrets.SSH_PASSWORD }}" >> $GITHUB_ENV
+            echo "SSH_FINAL_PORT=22022" >> $GITHUB_ENV
+            echo "DEPLOY_PATH=dev/${REPO_NAME}" >> $GITHUB_ENV
+            echo "USE_SSH_KEY=false" >> $GITHUB_ENV
+          fi
+
+      # DEPLOY SSH - EC2 (prod) com chave SSH
+      - name: Deploy to EC2 (prod) via SSH key
+        if: env.ENV == 'prod'
+        uses: appleboy/ssh-action@master
+        env:
+          ENV: ${{ env.ENV }}
+          BRANCH: ${{ env.BRANCH }}
+          REPO_NAME: ${{ env.REPO_NAME }}
+          DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        with:
+          host: ${{ env.SSH_FINAL_HOST }}
+          username: ${{ env.SSH_FINAL_USER }}
+          key: ${{ secrets.SSH_KEY_EC2 }}
+          port: ${{ env.SSH_FINAL_PORT }}
+          envs: ENV,BRANCH,REPO_NAME,DEPLOY_PATH,GIT_TOKEN
+          script: |
+            cd $DEPLOY_PATH
+            git pull https://$GIT_TOKEN@github.com/mind-developer/$REPO_NAME.git $BRANCH
+
+            # PRODUÇÃO (EC2) → usa docker compose
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+      # DEPLOY SSH - VPS (dev) com senha
+      - name: Deploy to VPS (dev) via SSH password
+        if: env.ENV == 'dev'
+        uses: appleboy/ssh-action@master
+        env:
+          ENV: ${{ env.ENV }}
+          BRANCH: ${{ env.BRANCH }}
+          REPO_NAME: ${{ env.REPO_NAME }}
+          DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+          APP_PORT_DEV: ${{ secrets.APP_PORT_DEV }}
+        with:
+          host: ${{ env.SSH_FINAL_HOST }}
+          username: ${{ env.SSH_FINAL_USER }}
+          password: ${{ env.SSH_FINAL_PASSWORD }}
+          port: ${{ env.SSH_FINAL_PORT }}
+          envs: ENV,BRANCH,REPO_NAME,DEPLOY_PATH,GIT_TOKEN,APP_PORT_DEV
+          script: |
+
+            cd $DEPLOY_PATH
+            git pull https://$GIT_TOKEN@github.com/mind-developer/$REPO_NAME.git $BRANCH
+
+            # DEV (VPS) → usa o método antigo
+            docker stop $REPO_NAME-dev || true
+            docker rm $REPO_NAME-dev || true
+            docker rmi $REPO_NAME-dev:$APP_PORT_DEV || true
+
+            docker build --network host \
+              --build-arg PORT=$APP_PORT_DEV \
+              -t $REPO_NAME-dev:$APP_PORT_DEV .
+
+            docker run --pids-limit 100 --network host --restart unless-stopped -d \
+              -v /var/app-data/$REPO_NAME-dev/uploads:/app/uploads \
+              --name $REPO_NAME-dev \
+              $REPO_NAME-dev:$APP_PORT_DEV

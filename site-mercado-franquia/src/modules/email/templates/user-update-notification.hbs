@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atualização de dados cadastrais</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo img {
+            max-width: 420px;
+            height: auto;
+        }
+        .logo h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin: 0;
+            font-weight: bold;
+        }
+        .content {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .content p {
+            margin-bottom: 20px;
+            font-size: 40px;
+        }
+
+        .info p {
+            font-size: 26px;
+            color: #000000;
+        }
+
+        .highlight {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .support-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #E25E3E;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .support-info p {
+            font-size: 16px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .signature {
+            margin-top: 30px;
+            font-size: 26px;
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="cid:logo" alt="Mercado Franquias"/>
+        </div>
+
+        <div class="content">
+            <p>Olá, <span class="highlight">{{userName}}</span></p>
+        
+            <div class="info">
+                <p>Informamos que uma atualização em seus dados cadastrais foi realizada por um administrador do sistema.</p>
+            </div>    
+            
+            <div class="support-info">
+                <p>Se você não reconhece essa alteração ou tem alguma dúvida, entre em contato com nossa equipe de suporte pelo e-mail <strong>f500@email.com</strong>.</p>
+            </div>
+        </div>
+
+        <div class="signature">
+            <p>Atenciosamente, Mercado Franquias</p>
+        </div>
+
+        <div class="footer">
+            <p>© {{currentYear}} - Mercado Franquias. Todos os direitos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>

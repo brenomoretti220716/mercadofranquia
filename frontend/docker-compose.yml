@@ -1,0 +1,19 @@
+services:
+  frontend:
+    build: .
+    container_name: frontend
+    restart: unless-stopped
+
+    environment:
+      # Porta interna do Next.js
+      PORT: ${PORT:-3000}
+      NODE_ENV: ${NODE_ENV:-development}
+      # URL da API backend
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+
+    networks:
+      - proxy_net
+
+networks:
+  proxy_net:
+    external: true

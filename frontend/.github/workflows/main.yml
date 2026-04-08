@@ -1,0 +1,48 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 20.x
+
+      - name: Extract repository name
+        id: repo-name
+        run: echo "REPO_NAME=$(echo ${GITHUB_REPOSITORY} | cut -d '/' -f 2)" >> $GITHUB_ENV
+
+      - name: Set environment variables based on branch
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "DEPLOY_ENV=prod" >> $GITHUB_ENV
+            echo "APP_PORT=${{ secrets.APP_PORT_PROD }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" == "dev" ]; then
+            echo "DEPLOY_ENV=dev" >> $GITHUB_ENV
+            echo "APP_PORT=${{ secrets.APP_PORT_DEV }}" >> $GITHUB_ENV
+          fi
+
+      - name: SSH deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          port: 22022
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd ${{ env.DEPLOY_ENV }}/${{ env.REPO_NAME }}
+            git pull https://${{ secrets.GIT_TOKEN }}@github.com/mind-developer/${{ env.REPO_NAME }}.git ${{ github.ref_name }}
+            docker stop ${{ env.REPO_NAME }}-${{ env.DEPLOY_ENV }}
+            docker remove ${{ env.REPO_NAME }}-${{ env.DEPLOY_ENV }}
+            docker rmi ${{ env.REPO_NAME }}-${{ env.DEPLOY_ENV }}:${{ env.APP_PORT }}
+            docker build --network host --build-arg PORT=${{ env.APP_PORT }} -t ${{ env.REPO_NAME }}-${{ env.DEPLOY_ENV }}:${{ env.APP_PORT }} .
+            docker run --network host --restart unless-stopped -d -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} --name ${{ env.REPO_NAME }}-${{ env.DEPLOY_ENV }} ${{ env.REPO_NAME }}-${{ env.DEPLOY_ENV }}:${{ env.APP_PORT }}

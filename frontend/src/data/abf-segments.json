@@ -1,0 +1,258 @@
+{
+  "2020": {
+    "Q4": [
+      {
+        "segment": "Alimentação - Comércio e Distribuição",
+        "acronym": "ACD",
+        "value": 2899
+      },
+      {
+        "segment": "Alimentação - Foodservice",
+        "acronym": "AFS",
+        "value": 10178
+      },
+      {
+        "segment": "Casa e Construção",
+        "acronym": "CC",
+        "value": 4430
+      },
+      {
+        "segment": "Comunicação, Informática e Eletrônicos",
+        "acronym": "CIE",
+        "value": 1863
+      },
+      {
+        "segment": "Entretenimento e Lazer",
+        "acronym": "EL",
+        "value": 713
+      },
+      {
+        "segment": "Hotelaria e Turismo*",
+        "acronym": "HT",
+        "value": 2029
+      },
+      {
+        "segment": "Limpeza e Conservação",
+        "acronym": "LC",
+        "value": 398
+      },
+      {
+        "segment": "Moda",
+        "acronym": "MOD",
+        "value": 8043
+      },
+      {
+        "segment": "Saúde, Beleza e Bem Estar",
+        "acronym": "SBBE",
+        "value": 10797
+      },
+      {
+        "segment": "Serviços Automotivos",
+        "acronym": "SA",
+        "value": 1453
+      },
+      {
+        "segment": "Serviços e Outros Negócios",
+        "acronym": "SON",
+        "value": 8184
+      },
+      {
+        "segment": "Serviços educacionais",
+        "acronym": "EDU",
+        "value": 2990
+      }
+    ]
+  },
+  "2021": {
+    "Q4": [
+      {
+        "segment": "Alimentação - Comércio e Distribuição",
+        "acronym": "ACD",
+        "value": 3140
+      },
+      {
+        "segment": "Alimentação - Foodservice",
+        "acronym": "AFS",
+        "value": 10418
+      },
+      {
+        "segment": "Casa e Construção",
+        "acronym": "CC",
+        "value": 4716
+      },
+      {
+        "segment": "Comunicação, Informática e Eletrônicos",
+        "acronym": "CIE",
+        "value": 1895
+      },
+      {
+        "segment": "Entretenimento e Lazer",
+        "acronym": "EL",
+        "value": 763
+      },
+      {
+        "segment": "Hotelaria e Turismo*",
+        "acronym": "HT",
+        "value": 2349
+      },
+      {
+        "segment": "Limpeza e Conservação",
+        "acronym": "LC",
+        "value": 406
+      },
+      {
+        "segment": "Moda",
+        "acronym": "MOD",
+        "value": 8293
+      },
+      {
+        "segment": "Saúde, Beleza e Bem Estar",
+        "acronym": "SBBE",
+        "value": 11052
+      },
+      {
+        "segment": "Serviços Automotivos",
+        "acronym": "SA",
+        "value": 1535
+      },
+      {
+        "segment": "Serviços e Outros Negócios",
+        "acronym": "SON",
+        "value": 8995
+      },
+      {
+        "segment": "Serviços educacionais",
+        "acronym": "EDU",
+        "value": 3099
+      }
+    ]
+  },
+  "2022": {
+    "Q4": [
+      {
+        "segment": "Alimentação - Comercialização e Distribuição",
+        "acronym": "ACD",
+        "value": 3579
+      },
+      {
+        "segment": "Alimentação - Food Service",
+        "acronym": "AFS",
+        "value": 12601
+      },
+      {
+        "segment": "Casa e Construção",
+        "acronym": "CC",
+        "value": 4965
+      },
+      {
+        "segment": "Comunicação, Informática e Eletrônicos",
+        "acronym": "CIE",
+        "value": 2005
+      },
+      {
+        "segment": "Educação",
+        "acronym": "EDU",
+        "value": 3678
+      },
+      {
+        "segment": "Entretenimento e Lazer",
+        "acronym": "EL",
+        "value": 863
+      },
+      {
+        "segment": "Hotelaria e Turismo",
+        "acronym": "HT",
+        "value": 2640
+      },
+      {
+        "segment": "Limpeza e Conservação",
+        "acronym": "LC",
+        "value": 474
+      },
+      {
+        "segment": "Moda",
+        "acronym": "MOD",
+        "value": 8223
+      },
+      {
+        "segment": "Saúde, Beleza e Bem Estar",
+        "acronym": "SBBE",
+        "value": 13653
+      },
+      {
+        "segment": "Serviços Automotivos",
+        "acronym": "SA",
+        "value": 1699
+      },
+      {
+        "segment": "Serviços e Outros Negócios",
+        "acronym": "SON",
+        "value": 9420
+      }
+    ]
+  },
+  "2023": {
+    "Q4": [
+      {
+        "segment": "Alimentação - Comercialização e Distribuição",
+        "acronym": "ACD",
+        "value": 3855
+      },
+      {
+        "segment": "Alimentação - Food Service",
+        "acronym": "AFS",
+        "value": 14736
+      },
+      {
+        "segment": "Casa e Construção",
+        "acronym": "CC",
+        "value": 5484
+      },
+      {
+        "segment": "Comunicação, Informática e Eletrônicos",
+        "acronym": "CIE",
+        "value": 2283
+      },
+      {
+        "segment": "Educação",
+        "acronym": "EDU",
+        "value": 3919
+      },
+      {
+        "segment": "Entretenimento e Lazer",
+        "acronym": "EL",
+        "value": 992
+      },
+      {
+        "segment": "Hotelaria e Turismo",
+        "acronym": "HT",
+        "value": 3062
+      },
+      {
+        "segment": "Limpeza e Conservação",
+        "acronym": "LC",
+        "value": 533
+      },
+      {
+        "segment": "Moda",
+        "acronym": "MOD",
+        "value": 9402
+      },
+      {
+        "segment": "Saúde, Beleza e Bem Estar",
+        "acronym": "SBBE",
+        "value": 15705
+      },
+      {
+        "segment": "Serviços Automotivos",
+        "acronym": "SA",
+        "value": 1942
+      },
+      {
+        "segment": "Serviços e Outros Negócios",
+        "acronym": "SON",
+        "value": 10964
+      }
+    ]
+  }
+}

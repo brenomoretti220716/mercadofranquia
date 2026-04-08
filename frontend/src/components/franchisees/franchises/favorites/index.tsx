@@ -1,0 +1,5 @@
+export { default as Favorites } from './Favorites'
+export { default as FavoritesTable } from './FavoritesTable'
+export { default as FavoritesTableHeader } from './FavoritesTableHeader'
+export { default as FavoritesTableBody } from './FavoritesTableBody'
+export { default as FavoritesTableRow } from './FavoritesTableRow'

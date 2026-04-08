@@ -1,0 +1,11 @@
+services:
+  frontend:
+    container_name: frontend-prod
+
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://apifranchise.mindconsulting.com.br}
+
+    ports:
+      - "3000:3000"
